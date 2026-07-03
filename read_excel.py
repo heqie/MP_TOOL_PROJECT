@@ -8,11 +8,7 @@
 '''
 import pandas as pd
 from tkinter import messagebox
-
-
-def read_excel1(file_path, sheet_name):
-    df = pd.read_excel(file_path, sheet_name=sheet_name)
-    return df
+import re
 
 
 def read_excel_with_merged_cells(file_path, sheet_name):
@@ -212,6 +208,67 @@ def read_excel_for_analyse(file_path, sheet_name):
                 df = df.replace('', '0')
                 # # 填充非文本类型单元格数据为0
                 df = df.fillna(0)
+                # 删除字符串中的空格和换行符
+                df = df.replace({'\n': '', ' ': ''}, regex=True)
+
+        return df
+    except Exception as e:
+        print(f"读取Excel文件失败: {e}")
+        return None
+
+
+def remove_parentheses(text):
+    pattern = r"\([^()]*\)"
+    text = re.sub(pattern, "", text)
+    return text
+
+
+def read_excel_for_analyseKS(file_path, sheet_name):
+    """
+    读取并处理excel用于分析客诉记录统计
+    :param file_path:文件路径
+    :param sheet_name:文件页
+    :return: data
+    """
+    try:
+        with pd.ExcelFile(file_path) as excel_file:
+            all_sheet_names = excel_file.sheet_names
+
+            # 如果未指定 Sheet 名称，使用第一个 Sheet
+            if sheet_name is None:
+                sheet_name = all_sheet_names[0]
+
+            # 检查指定的 Sheet 是否存在
+            if sheet_name not in all_sheet_names:
+                raise ValueError(f"Sheet '{sheet_name}' 不存在")
+
+            # 读取指定的 Sheet
+            df = pd.read_excel(excel_file, sheet_name=sheet_name)
+            if sheet_name == '客诉记录':
+
+                df = pd.DataFrame(df)
+                # # 删除字符串中的空格和换行符
+                df = df.replace({'\n': '', ' ': ''}, regex=True)
+                #将合并单元格填充相同的内容
+                for i in range(0,14):
+                    df.iloc[:, i] = df.iloc[:, i].ffill()
+
+                # df.iloc[:, 12] = df.iloc[:, 12].astype(str).str.replace(r'\(.*?\)', '', regex=True)  # 英文括号
+                # df.iloc[:, 12].replace(r"\(.*?\）", "", regex=True)  # 中文括号
+
+                #客诉类型去掉括号及其括号内容
+                df.iloc[:, 12] = df.iloc[:, 12].apply(lambda x: remove_parentheses(str(x)))
+                #替代部分不规范字符
+                df.replace({
+                    'Y': '是',
+                    'N': '否',
+                    '大通':'大通显示',
+                    '汉龙':'汉龙时代',
+                    '立德/新显':'长信新显',
+                    '新显':'长信新显',
+                    'IC来料、玻璃':'玻璃'
+                }, inplace=True)
+
                 # 删除字符串中的空格和换行符
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
 

@@ -17,61 +17,12 @@ FACTORIES = ['海菲', '信利', '易快来', '联创', '创维', '同兴达', '
              '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代', '晶胜通',
              '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显',
              '宏凯', '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示',
-             '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视', '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯']
+             '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视', '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯','万联','重联']
 GLASS_TYPES = ['CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA',
                'SHARP', 'MDT', 'HKC', 'HSD', 'INX', 'IVO', 'CTC']
 
 TARGET_ICS = ['7272', '7202M', '7202H']
 YEARS = ['2022年度', '2023年度', '2024年度', '2025年度']
-
-# def statistic_project_status(df):
-#     """
-#     统计更新次数对应的项目数量
-#     :param df:
-#     :return:
-#     """
-#     # 筛选K列站点为"模组"的数据
-#     df_filtered = df[df.iloc[:, 10] == '模组']  # K列是第10列（索引从0开始）
-#
-#     # 提取C列（项目名）、F列（模组厂）和P列（更新说明）
-#     project_names = df_filtered.iloc[:, 2].astype(str)  # C列
-#     module_factories = df_filtered.iloc[:, 5].astype(str)  # F列
-#     update_column = df_filtered.iloc[:, 15].astype(str)  # P列
-#
-#     # 组合项目名和模组厂作为唯一标识
-#     project_unique_id = project_names + '_' + module_factories
-#
-#     # 统计每个项目的更新次数
-#     project_update_counts = {}
-#     for unique_id, update_value in zip(project_unique_id, update_column):
-#         if update_value != '0':  # 假设'0'表示没有更新
-#             if unique_id in project_update_counts:
-#                 project_update_counts[unique_id] += 1
-#             else:
-#                 project_update_counts[unique_id] = 1
-#
-#     # 统计每个更新次数对应的项目数量
-#     update_count_distribution = {}
-#     for count in project_update_counts.values():
-#         if count in update_count_distribution:
-#             update_count_distribution[count] += 1
-#         else:
-#             update_count_distribution[count] = 1
-#
-#     # 打印统计结果
-#     # print(f"共统计到{len(project_update_counts)}个项目的更新次数")
-#     # print(f"更新次数及对应的项目数量如下：")
-#     # for count, num in update_count_distribution.items():
-#     #     print(f"{count}: {num}")
-#
-#     # 将统计结果转换为DataFrame以便绘图
-#     update_count_distribution_df = pd.DataFrame(list(update_count_distribution.items()),
-#                                                 columns=['Update Count', 'Number of Projects'])
-#
-#     return update_count_distribution_df
-
-
-''''添加筛选条件'''
 
 
 def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL'):

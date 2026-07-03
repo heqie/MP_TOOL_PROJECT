@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 '''
-@Project ：MP TOOL PROJECT 
+@Project ：MP TOOL PROJECT
 @File    ：MP List Check Tool.py
 @Author  ：zxh
-@Date    ：2025/3/19 16:20 
+@Date    ：2025/3/19 16:20
 '''
 import pandas as pd
 import tkinter as tk
@@ -17,6 +17,7 @@ import matplotlib.animation as animation
 from read_excel import *
 from check import *
 from analyze import *
+from analyzeKS import *
 
 pd.options.mode.chained_assignment = None  # 禁用警告
 # 解决中文显示问题
@@ -311,6 +312,67 @@ class AnalyseFrame(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
+
+        # 创建内部标签页容器
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill='both', expand=True)
+
+        # 自定义更小的标签页样式
+        style = ttk.Style()
+
+        # 创建自定义标签样式
+        style.configure('Small.TNotebook.Tab',
+                        padding=(3, 1),
+                        font=('Arial',10, 'normal'),
+                        width=8,
+                        anchor='center')
+
+        # 应用自定义样式
+        self.notebook.configure(style='Small.TNotebook')
+
+        # 创建MP分析标签页
+        self.mp_frame = tk.Frame(self.notebook)
+        self.notebook.add(self.mp_frame, text='MP分析',padding=0)
+
+        # 创建客诉分析标签页
+        self.ks_frame = tk.Frame(self.notebook)
+        self.notebook.add(self.ks_frame, text='客诉分析',padding=0)
+
+        # 初始化两个子标签页
+        self.init_mp_frame()
+        self.init_ks_frame()
+
+        # 将子分析类pack到各自的frame中
+        self.mp_analysis.pack(fill='both', expand=True)
+        self.ks_analysis.pack(fill='both', expand=True)
+
+        # 绑定标签页切换事件
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+
+    def init_mp_frame(self):
+        """初始化MP分析标签页"""
+        self.mp_analysis = MPAnalysis(self.mp_frame)
+
+    def init_ks_frame(self):
+        """初始化客诉分析标签页"""
+        self.ks_analysis = KSAnalysis(self.ks_frame)
+
+    def on_tab_changed(self, event):
+        """标签页切换"""
+        selected_tab = self.notebook.select()
+        tab_text = self.notebook.tab(selected_tab, "text")
+
+        if tab_text.strip() == "MP分析":
+            if hasattr(self.mp_analysis, 'canvas') and self.mp_analysis.canvas:
+                self.mp_analysis.canvas.get_tk_widget().place(x=0, y=120)
+        elif tab_text.strip() == "客诉分析":
+            if hasattr(self.ks_analysis, 'canvas_KS') and self.ks_analysis.canvas_KS:
+                self.ks_analysis.canvas_KS.get_tk_widget().place(x=0, y=120)
+
+class MPAnalysis(tk.Frame):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.master = master
         self.create_widgets()
         self.file_path_analyse = None
         self.df1 = None
@@ -349,7 +411,7 @@ class AnalyseFrame(tk.Frame):
         group_frame = tk.LabelFrame(self, bd=2, relief="groove", padx=5, pady=5)
         group_frame.place(x=460 * multiple, y=10, width=130, height=90)
         # 数据分析按键
-        self.btn_analyse = tk.Button(self, text="数据分析", width=15, command=self.get_xl_to_analyse, state=tk.DISABLED)
+        self.btn_analyse = tk.Button(self, text="项目统计", width=15, command=self.get_xl_to_analyse, state=tk.DISABLED)
         self.btn_analyse.place(x=465 * multiple, y=15)
 
         self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度']
@@ -400,7 +462,7 @@ class AnalyseFrame(tk.Frame):
         self.year_dropdown.current(0)
         self.year_dropdown.place(x=210 * multiple, y=80, width=80)
 
-        #模组分页设置
+        # 模组分页设置
         # 初始化分页控件
         self.page_label = tk.Label(self)
         self.btn_prev = tk.Button(self, text="◀", width=2)
@@ -486,9 +548,52 @@ class AnalyseFrame(tk.Frame):
             self.flash_dropdown.config(state=tk.NORMAL)
             self.year_dropdown.config(state=tk.DISABLED)
 
+    def draw_histogram(self, choose, title, counts):
+        """
+        绘制直方图
+        :param choose: X粥
+        :param title: 筛选条件
+        :param counts: 直方图数据
+        :return: 直方图
+        """
+        # 绘制图表
+        if int(counts.sum()) != 0:
+            fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+            f_plot = fig.add_subplot(111)  # 划分区域
+            self.canvas = FigureCanvasTkAgg(fig, master=self)
+            self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
+            f_plot.clear()  # 刷新
+
+            bars = plt.bar(counts.index, counts.values, width=0.6)
+            # 添加数据标签
+            for bar in bars:
+                height = bar.get_height()
+                plt.text(bar.get_x() + bar.get_width() / 2., height,
+                         f'{int(height)}',
+                         ha='center', va='bottom', fontsize=11, weight='bold')
+
+            a_title = choose + "项目数量统计"
+            if title:
+                a_title += "\n(" + " | ".join(title) + ")"
+
+            plt.title(a_title, fontsize=14, pad=10)
+            plt.xlabel(choose, fontsize=12)
+            plt.ylabel('MP项目数量', fontsize=12)
+            if choose == '模组厂':
+                plt.xticks(rotation=90, fontsize=10)
+            else:
+                plt.xticks(fontsize=10)
+            plt.yticks(fontsize=10)
+
+            # 自动调整y轴范围，留出标签空间
+            max_value = max(counts.values)
+            plt.ylim(0, max_value * 1.15)
+        else:
+            messagebox.showinfo("提示", "该筛选条件下项目数量为0")
+
     def get_xl_to_analyse(self):
         """
-
+        根据不同选择情况绘制直方图
         :return:
         """
         try:
@@ -521,7 +626,7 @@ class AnalyseFrame(tk.Frame):
                     project_counts = dist_stats.iloc[:, 0]  # 如果只有一列，使用第一列  传入的空Series
 
                 if len(project_counts) != 0:
-                    fig = plt.figure(figsize=(7.2, 5.5), dpi=100)
+                    fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
                     f_plot = fig.add_subplot(111)  # 划分区域
                     self.canvas = FigureCanvasTkAgg(fig, master=self)
                     self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
@@ -558,43 +663,13 @@ class AnalyseFrame(tk.Frame):
 
 
             elif choose == 'IC型号':
-
                 factory = self.module_dropdown.get()
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
 
                 title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year)
-                # 绘制图表
-                if int(ic_counts.sum()) != 0:
-                    fig = plt.figure(figsize=(7.2, 5.5), dpi=100)
-                    f_plot = fig.add_subplot(111)  # 划分区域
-                    self.canvas = FigureCanvasTkAgg(fig, master=self)
-                    self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
-                    f_plot.clear()  # 刷新
-
-                    bars = plt.bar(ic_counts.index, ic_counts.values, width=0.6)
-                    # 添加数据标签
-                    for bar in bars:
-                        height = bar.get_height()
-                        plt.text(bar.get_x() + bar.get_width() / 2., height,
-                                 f'{int(height)}',
-                                 ha='center', va='bottom', fontsize=11, weight='bold')
-                    title = "IC型号项目数量统计"
-                    if title_conditions:
-                        title += "\n(" + " | ".join(title_conditions) + ")"
-
-                    plt.title(title, fontsize=14, pad=10)
-                    plt.xlabel('IC型号', fontsize=12)
-                    plt.ylabel('项目数量', fontsize=12)
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-
-                    # 自动调整y轴范围，留出标签空间
-                    max_value = max(ic_counts.values)
-                    plt.ylim(0, max_value * 1.15)
-                else:
-                    messagebox.showinfo("提示", "该筛选条件下项目数量为0")
+                self.draw_histogram(choose, title_conditions, ic_counts)
 
             elif choose == '模组厂':
                 ic_type = self.ic_dropdown.get()
@@ -603,7 +678,6 @@ class AnalyseFrame(tk.Frame):
                 year = self.year_dropdown.get()
                 title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year)
                 self.module_data = factory_counts  # 保存模组厂数据
-
                 if int(factory_counts.sum()) > 0:
                     # 计算总页数
                     self.total_pages = (len(factory_counts) + 19) // 20
@@ -612,7 +686,7 @@ class AnalyseFrame(tk.Frame):
                     elif self.total_pages == 1:
                         # self.clear_plot()
                         # 绘制图表
-                        fig = plt.figure(figsize=(7.2, 5.5), dpi=100)
+                        fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
                         f_plot = fig.add_subplot(111)  # 划分区域
                         self.canvas = FigureCanvasTkAgg(fig, master=self)
                         self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
@@ -665,39 +739,7 @@ class AnalyseFrame(tk.Frame):
                 year = self.year_dropdown.get()
 
                 title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year)
-
-                if int(glass_counts.sum()) != 0:
-                    # 绘制图表
-                    fig = plt.figure(figsize=(7.2, 5.5), dpi=100)
-                    f_plot = fig.add_subplot(111)  # 划分区域
-                    self.canvas = FigureCanvasTkAgg(fig, master=self)
-                    self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
-                    f_plot.clear()  # 刷新
-
-                    bars = plt.bar(glass_counts.index, glass_counts.values)
-
-                    # 添加数据标签
-                    for bar in bars:
-                        height = bar.get_height()
-                        plt.text(bar.get_x() + bar.get_width() / 2., height,
-                                 f'{int(height)}',
-                                 ha='center', va='bottom', fontsize=10)
-
-                    title = "玻璃类型项目数量统计"
-                    if title_conditions:
-                        title += "\n(" + " | ".join(title_conditions) + ")"
-
-                    plt.title(title, fontsize=14, pad=10)
-                    plt.xlabel('玻璃类型', fontsize=12)
-                    plt.ylabel('项目数量', fontsize=12)
-                    plt.xticks(rotation=45, fontsize=10)
-                    plt.yticks(fontsize=10)
-
-                    # 自动调整y轴范围，留出标签空间
-                    max_value = max(glass_counts.values)
-                    plt.ylim(0, max_value * 1.15)
-                else:
-                    messagebox.showinfo("提示", "该筛选条件下项目数量为0")
+                self.draw_histogram(choose, title_conditions, glass_counts)
 
             elif choose == 'Flash':
                 ic_type = self.ic_dropdown.get()
@@ -705,80 +747,16 @@ class AnalyseFrame(tk.Frame):
                 glass = self.glass_dropdown.get()
                 year = self.year_dropdown.get()
                 title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year)
+                self.draw_histogram(choose, title_conditions, flash_counts)
 
-                if int(flash_counts.sum()) != 0:
-                    # 绘制图表
-                    fig = plt.figure(figsize=(7.2, 5.5), dpi=100)
-                    f_plot = fig.add_subplot(111)  # 划分区域
-                    self.canvas = FigureCanvasTkAgg(fig, master=self)
-                    self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
-                    f_plot.clear()  # 刷新
-
-                    bars = plt.bar(flash_counts.index, flash_counts.values, width=0.6)
-
-                    # 添加数据标签
-                    for bar in bars:
-                        height = bar.get_height()
-                        plt.text(bar.get_x() + bar.get_width() / 2., height,
-                                 f'{int(height)}',
-                                 ha='center', va='bottom', fontsize=12, weight='bold')
-
-                    title = "带Flash vs 不带Flash项目数量统计"
-                    if title_conditions:
-                        title += "\n(" + " | ".join(title_conditions) + ")"
-
-                    plt.title(title, fontsize=14, pad=10)
-                    plt.xlabel('是否带Flash', fontsize=12)
-                    plt.ylabel('项目数量', fontsize=12)
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-
-                    # 自动调整y轴范围，留出标签空间
-                    max_value = max(flash_counts.values)
-                    plt.ylim(0, max_value * 1.15)
-                else:
-                    messagebox.showinfo("提示", "该筛选条件下项目数量为0")
 
             elif choose == '年度':
                 ic_type = self.ic_dropdown.get()
                 factory = self.module_dropdown.get()
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
-
                 title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash)
-
-                if int(year_counts.sum()) != 0:
-                    # 绘制图表
-                    fig = plt.figure(figsize=(7.2, 5.5), dpi=100)
-                    f_plot = fig.add_subplot(111)  # 划分区域
-                    self.canvas = FigureCanvasTkAgg(fig, master=self)
-                    self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
-                    f_plot.clear()  # 刷新
-
-                    bars = plt.bar(year_counts.index, year_counts.values, width=0.6)
-
-                    # 添加数据标签
-                    for bar in bars:
-                        height = bar.get_height()
-                        plt.text(bar.get_x() + bar.get_width() / 2., height,
-                                 f'{int(height)}',
-                                 ha='center', va='bottom', fontsize=12, weight='bold')
-
-                    title = "年度项目数量统计"
-                    if title_conditions:
-                        title += "\n(" + " | ".join(title_conditions) + ")"
-
-                    plt.title(title, fontsize=14, pad=10)
-                    plt.xlabel('年度', fontsize=12)
-                    plt.ylabel('项目数量', fontsize=12)
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-
-                    # 自动调整y轴范围，留出标签空间
-                    max_value = max(year_counts.values)
-                    plt.ylim(0, max_value * 1.15)
-                else:
-                    messagebox.showinfo("提示", "该筛选条件下项目数量为0")
+                self.draw_histogram(choose, title_conditions, year_counts)
 
             # # 设置网格线
             # f_plot.grid(True, linestyle='--', alpha=0.6)
@@ -793,10 +771,9 @@ class AnalyseFrame(tk.Frame):
             self.total_pages = 1
             self.update_page_buttons()
 
-    def show_module_page(self, title_conditions, direction=0):
+    def show_module_page(self, title_conditions):
         """
         显示当前页码的模组厂数据
-        :param direction: 0-无动画, 1-向右滑动(下一页), -1-向左滑动(上一页)
         :return:
         """
         if self.module_data is None:
@@ -808,7 +785,7 @@ class AnalyseFrame(tk.Frame):
 
         # 创建图形和坐标轴(如果不存在)
         if self.fig is None:
-            self.fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+            self.fig = plt.figure(figsize=(7.2, 4.8), dpi=100)
             self.ax = self.fig.add_subplot(111)
 
         # 清除之前的画布
@@ -872,10 +849,6 @@ class AnalyseFrame(tk.Frame):
         self.ax.tick_params(axis='y', labelsize=10)
 
         if self.canvas:
-            # 如果有动画需求
-            if direction != 0:
-                self.create_slide_animation(direction)
-            else:
                 self.canvas.draw()
 
         # 更新翻页按钮状态
@@ -905,41 +878,10 @@ class AnalyseFrame(tk.Frame):
             )
 
             # 放置控件
-            self.page_label.place(x=460 * multiple, y=525 * multiple)
-            self.btn_prev.place(x=530 * multiple, y=525 * multiple)
-            self.btn_next.place(x=550 * multiple, y=525 * multiple)
+            self.page_label.place(x=460 * multiple, y=500 * multiple)
+            self.btn_prev.place(x=530 * multiple, y=500 * multiple)
+            self.btn_next.place(x=550 * multiple, y=500 * multiple)
 
-    def create_slide_animation(self, direction):
-        """创建滑动动画
-        direction: 1-向右滑动(下一页), -1-向左滑动(上一页)
-        """
-        # 停止之前的动画
-        if self.animation:
-            self.animation.event_source.stop()
-
-        # 初始位置设置
-        initial_offset = 0.1 * direction  # 初始偏移量(10%的宽度)
-        self.ax.set_position([0.5 + initial_offset, 0.15, 0.85, 0.8])  # [left, bottom, width, height]
-
-        # 动画帧数
-        frames = 10
-        step = -initial_offset / frames
-
-        def update(frame):
-            offset = initial_offset + step * frame
-            self.ax.set_position([0.5 + offset, 0.15, 0.85, 0.8])
-            return self.ax,
-
-        # 创建动画
-        self.animation = animation.FuncAnimation(
-            self.fig,
-            update,
-            frames=frames,
-            interval=20,  # 每帧间隔20ms
-            blit=True
-        )
-
-        self.canvas.draw()
 
     def prev_page(self):
         """
@@ -967,15 +909,409 @@ class AnalyseFrame(tk.Frame):
             self.canvas = None
 
 
+class KSAnalysis(tk.Frame):
+    """
+    Analyse界面 用于客诉记录分析
+    """
+
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.master = master
+        self.create_widgets()
+        self.file_path_analyseKS = None
+        self.df_KS = None
+        self.canvas_KS = None  # 用于保存画布对象
+
+    def create_widgets(self):
+        """
+
+        :return:
+        """
+        # 文件路径显示区域
+        self.label_file_pathKS = tk.Label(self, text="文 件 路 径:")
+        self.label_file_pathKS.place(x=10, y=10)
+
+        self.text_file_pathKS = tk.Entry(self, state="readonly")
+        self.text_file_pathKS.place(x=90, y=10, width=320 * multiple + 20, height=25)
+
+        # 文件选择按钮
+        self.btn_open_analyseKS = tk.Button(self, text="...", width=3, bg='Gainsboro', command=self.analyseKS_open_file)
+        self.btn_open_analyseKS.place(x=420 * multiple, y=10)
+
+        # 将数据分析及其下拉框框起来
+        group_frameKS = tk.LabelFrame(self, bd=2, relief="groove", padx=5, pady=5)
+        group_frameKS.place(x=460 * multiple, y=10, width=130, height=90)
+        # 数据分析按键
+
+        self.btn_analyseKS = tk.Button(self, text="客诉统计", width=15, command=self.get_xl_to_analyseKS, state=tk.DISABLED)
+        self.btn_analyseKS.place(x=465 * multiple, y=15)
+
+        self.analyse_valuesKS = ['IC型号', '模组厂', '玻璃厂', '年度', '转接AE与否', '结案与否', '客诉类型', '负责人']
+        self.analyse_dropdownKS = ttk.Combobox(self, values=self.analyse_valuesKS, state="readonly")
+        self.analyse_dropdownKS.current(0)
+        self.analyse_dropdownKS.place(x=475 * multiple, y=60, width=100)
+
+        self.analyse_dropdownKS.bind("<<ComboboxSelected>>", self.choose_statusKS)
+
+        # 下拉框区域
+        self.label_ic_KS = tk.Label(self, text="IC型号:", anchor="e")
+        self.label_ic_KS.place(x=5 * multiple, y=50, width=50)
+        self.ic_values_KS = ["ALL", '7272', '7202H', '7202M']
+        self.ic_dropdownKS = ttk.Combobox(self, values=self.ic_values_KS, state="readonly")
+        self.ic_dropdownKS.config(state=tk.DISABLED)
+        self.ic_dropdownKS.current(0)
+        self.ic_dropdownKS.place(x=45 * multiple, y=50, width=70)
+
+        self.label_module_KS = tk.Label(self, text="模组厂:", anchor="e")
+        self.label_module_KS.place(x=125 * multiple, y=50, width=50)
+        self.module_values_KS = ['ALL', '海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙', '合力泰', '华显',
+                                 '维立',
+                                 '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
+                                 '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
+                                 '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
+                                 '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联']
+        self.module_dropdownKS = ttk.Combobox(self, values=self.module_values_KS, state="readonly")
+        self.module_dropdownKS.current(0)
+        self.module_dropdownKS.place(x=165 * multiple, y=50, width=70)
+
+        self.label_glass_KS = tk.Label(self, text="玻璃厂:", anchor="e")
+        self.label_glass_KS.place(x=245 * multiple, y=50, width=50)
+        self.glass_values_KS = ['ALL', 'CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA', 'SHARP', 'MDT', 'HKC', 'HSD',
+                                'INX',
+                                'IVO', 'CTC']
+        self.glass_dropdownKS = ttk.Combobox(self, values=self.glass_values_KS, state="readonly")
+        self.glass_dropdownKS.current(0)
+        self.glass_dropdownKS.place(x=285 * multiple, y=50, width=70)
+
+        self.label_year_KS = tk.Label(self, text="年度:", anchor="e")
+        self.label_year_KS.place(x=350 * multiple, y=50, width=50)
+        self.year_values_KS = ['ALL', '2022', '2023', '2024', '2025']
+        self.year_dropdownKS = ttk.Combobox(self, values=self.year_values_KS, state="readonly")
+        self.year_dropdownKS.current(0)
+        self.year_dropdownKS.place(x=390 * multiple, y=50, width=70)
+
+        self.label_AE_KS = tk.Label(self, text="转接AE与否:", anchor="e")
+        self.label_AE_KS.place(x=108 * multiple, y=80, width=70)
+        self.AE_values_KS = ['ALL', '是', '否']
+        self.AE_dropdownKS = ttk.Combobox(self, values=self.AE_values_KS, state="readonly")
+        self.AE_dropdownKS.current(0)
+        self.AE_dropdownKS.place(x=165 * multiple, y=80, width=70)
+
+        self.label_over_KS = tk.Label(self, text="结案与否:", anchor="w")
+        self.label_over_KS.place(x=0, y=80, width=60)
+        self.over_values_KS = ['ALL', '是', '否']
+        self.over_dropdownKS = ttk.Combobox(self, values=self.over_values_KS, state="readonly")
+        self.over_dropdownKS.current(0)
+        self.over_dropdownKS.place(x=45 * multiple, y=80, width=70)
+
+        self.label_type_KS = tk.Label(self, text="客诉类型:", anchor="e")
+        self.label_type_KS.place(x=235 * multiple, y=80, width=60)
+        self.type_values_KS = ['ALL', '误判', 'DPcode', 'FW效果', 'IC来料', '环境干扰', '模组工艺', '人为因素', '玻璃']
+        self.type_dropdownKS = ttk.Combobox(self, values=self.type_values_KS, state="readonly")
+        self.type_dropdownKS.current(0)
+        self.type_dropdownKS.place(x=285 * multiple, y=80, width=70)
+
+        self.label_principal_KS = tk.Label(self, text="负责人:", anchor="e")
+        self.label_principal_KS.place(x=350 * multiple, y=80, width=50)
+        self.principal_values_KS = ['ALL', '黄耀', '吴宏博', '丁淑芳', '成鹏', '李尚聪', '卓秀慧']
+        self.principal_dropdownKS = ttk.Combobox(self, values=self.principal_values_KS, state="readonly")
+        self.principal_dropdownKS.current(0)
+        self.principal_dropdownKS.place(x=390 * multiple, y=80, width=70)
+
+    def analyseKS_open_file(self):
+        """
+
+        :return:
+        """
+        # 打开文件选择对话框
+        self.file_path_analyseKS = filedialog.askopenfilename(filetypes=[("Excel文件", "*.xlsx")])
+
+        if self.file_path_analyseKS:
+            # 更新文件路径
+            self.text_file_pathKS.config(state="normal")
+            self.text_file_pathKS.delete(0, tk.END)
+            self.text_file_pathKS.insert(0, self.file_path_analyseKS)
+            self.text_file_pathKS.config(state="readonly")
+
+            # 启用数据分析键
+            self.btn_analyseKS.config(state=tk.NORMAL)
+
+            # 重新选择文件则清除画布
+            # self.clear_plot()
+
+    def analyseKS_reload_excel(self):
+        """
+        加载文件
+        :return:
+        """
+        try:
+            self.df_KS = read_excel_for_analyseKS(self.file_path_analyseKS, sheet_name='客诉记录')
+        except Exception as e:
+            self.df_KS = None
+            messagebox.showerror("错误", f"读取Excel文件失败: {e}")
+
+    def choose_statusKS(self, event=None):
+        choose = self.analyse_dropdownKS.get()
+        if choose == 'IC型号':
+            self.ic_dropdownKS.config(state=tk.DISABLED)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '模组厂':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.DISABLED)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '玻璃厂':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.DISABLED)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '年度':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.DISABLED)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '转接AE与否':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.DISABLED)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '结案与否':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.DISABLED)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '客诉类型':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.DISABLED)
+            self.principal_dropdownKS.config(state=tk.NORMAL)
+
+        elif choose == '负责人':
+            self.ic_dropdownKS.config(state=tk.NORMAL)
+            self.module_dropdownKS.config(state=tk.NORMAL)
+            self.glass_dropdownKS.config(state=tk.NORMAL)
+            self.year_dropdownKS.config(state=tk.NORMAL)
+            self.AE_dropdownKS.config(state=tk.NORMAL)
+            self.over_dropdownKS.config(state=tk.NORMAL)
+            self.type_dropdownKS.config(state=tk.NORMAL)
+            self.principal_dropdownKS.config(state=tk.DISABLED)
+
+    def draw_histogram_KS(self,choose,title,counts):
+        """
+        绘制直方图
+        :param choose: X粥
+        :param title: 筛选条件
+        :param counts: 直方图数据
+        :return: 直方图
+        """
+        # 绘制图表
+        if int(counts.sum()) != 0:
+            fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+            f_plot = fig.add_subplot(111)  # 划分区域
+            self.canvas = FigureCanvasTkAgg(fig, master=self)
+            self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
+            f_plot.clear()  # 刷新
+
+            bars = plt.bar(counts.index, counts.values, width=0.6)
+            # 添加数据标签
+            for bar in bars:
+                height = bar.get_height()
+                plt.text(bar.get_x() + bar.get_width() / 2., height,
+                         f'{int(height)}',
+                         ha='center', va='bottom', fontsize=11, weight='bold')
+
+            a_title = choose+"客诉数量统计"
+            if title:
+                a_title +="\n(" + " | ".join(title) + ")"
+
+            plt.title(a_title, fontsize=14, pad=10)
+            plt.xlabel(choose, fontsize=12)
+            plt.ylabel('客诉记录数量', fontsize=12)
+            if choose == '模组厂':
+                plt.xticks(rotation=90,fontsize=10)
+            else:
+                plt.xticks(fontsize=10)
+            plt.yticks(fontsize=10)
+
+            # 自动调整y轴范围，留出标签空间
+            max_value = max(counts.values)
+            plt.ylim(0, max_value * 1.15)
+        else:
+            messagebox.showinfo("提示", "该筛选条件下项目数量为0")
+
+    def get_xl_to_analyseKS(self):
+        """
+        根据不同选择情况绘制直方图
+        :return:
+        """
+        try:
+            self.analyseKS_reload_excel()  # 每次点击数据分析可重新加载文件
+            choose = self.analyse_dropdownKS.get()
+            self.clear_plotKS()  # 每次选择先清除上一次直方图
+
+            if choose == 'IC型号':
+                factory = self.module_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+                title_conditions, ic_counts = statistic_ic_projects_KS(self.df_KS, factory, glass, year, transfer_AE,
+                                                                       over, type, principal)
+                self.draw_histogram_KS(choose, title_conditions, ic_counts)
+
+
+            elif choose == '模组厂':
+                ic_type = self.ic_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+
+                title_conditions, factory_counts = statistic_module_factory_KS(self.df_KS, ic_type, glass, year,
+                                                                               transfer_AE, over, type, principal)
+                self.draw_histogram_KS(choose, title_conditions, factory_counts)
+
+            elif choose == '玻璃厂':
+                factory = self.module_dropdownKS.get()
+                ic_type = self.ic_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+
+                title_conditions, glass_counts = statistic_glass_projects_KS(self.df_KS, factory,ic_type,year, transfer_AE, over, type,principal)
+                self.draw_histogram_KS(choose, title_conditions, glass_counts)
+
+            elif choose == '年度':
+                ic_type = self.ic_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                factory = self.module_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+
+                title_conditions, year_counts = statistic_project_by_year_KS(self.df_KS, factory, ic_type, glass,
+                                                                             transfer_AE, over, type, principal)
+                self.draw_histogram_KS(choose, title_conditions, year_counts)
+
+            elif choose == '转接AE与否':
+                ic_type = self.ic_dropdownKS.get()
+                factory = self.module_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+
+                title_conditions, transferAE_counts = statistic_project_transferAE_KS(self.df_KS, factory,ic_type,glass,year, over, type,principal)
+                self.draw_histogram_KS(choose, title_conditions, transferAE_counts)
+
+            elif choose == '结案与否':
+                factory = self.module_dropdownKS.get()
+                ic_type = self.ic_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+
+                title_conditions, over_counts = statistic_project_over_KS(self.df_KS, factory, ic_type, glass, year, transfer_AE, type, principal)
+                self.draw_histogram_KS(choose, title_conditions, over_counts)
+
+            elif choose == '客诉类型':
+                factory = self.module_dropdownKS.get()
+                ic_type = self.ic_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                principal = self.principal_dropdownKS.get()
+
+                title_conditions, type_counts = statistic_project_type_KS(self.df_KS, factory,ic_type,glass,year, transfer_AE, over,principal)
+                self.draw_histogram_KS(choose, title_conditions, type_counts)
+
+            elif choose == '负责人':
+                ic_type = self.ic_dropdownKS.get()
+                glass = self.glass_dropdownKS.get()
+                factory = self.module_dropdownKS.get()
+                year = self.year_dropdownKS.get()
+                transfer_AE = self.AE_dropdownKS.get()
+                over = self.over_dropdownKS.get()
+                type = self.type_dropdownKS.get()
+
+                title_conditions, principal_counts = statistic_project_principal_KS(self.df_KS, factory,ic_type,glass,year, transfer_AE, over,type)
+                self.draw_histogram_KS(choose, title_conditions, principal_counts)
+            # # 设置网格线
+            # f_plot.grid(True, linestyle='--', alpha=0.6)
+            # 使直方图填充整个画布
+            plt.tight_layout()
+            if self.canvas_KS:
+                self.canvas_KS.draw()
+
+        except Exception as e:
+            messagebox.showerror("错误", f"数据分析时发生错误: {str(e)}")
+            self.clear_plotKS()
+
+    def clear_plotKS(self):
+        """
+        清除直方图
+        :return:
+        """
+        if self.canvas_KS:
+            self.canvas_KS.get_tk_widget().destroy()  # 销毁画布
+            self.canvas_KS = None
+
 
 class MainApp:
     """
-    主程序界面，用于切换create和 Analyse界面
+    主程序界面，用于切换check和 Analyse界面
     """
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v4.1_20250409")
+        self.root.title("MP List Check Tool_v4.2_20250509")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 
@@ -989,7 +1325,7 @@ class MainApp:
 
         # 创建Analyse标签页
         self.analyse_frame = AnalyseFrame(self.notebook)
-        self.notebook.add(self.analyse_frame, text='   Analyse   ')
+        self.notebook.add(self.analyse_frame, text='  Analyse  ')
 
         # 绑定标签页切换事件
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
@@ -1016,12 +1352,18 @@ class MainApp:
 
         if tab_text.strip() == "Analyse":
             # 切换到Analyse界面时，确保直方图显示
-            if self.analyse_frame.canvas:
-                self.analyse_frame.canvas.get_tk_widget().place(x=0, y=120)
-            # pass
+            current_tab = self.analyse_frame.notebook.select()
+            current_tab_text = self.analyse_frame.notebook.tab(current_tab, "text")
+
+            if current_tab_text.strip() == "MP分析":
+                if hasattr(self.analyse_frame.mp_analysis, 'canvas') and self.analyse_frame.mp_analysis.canvas:
+                    self.analyse_frame.mp_analysis.canvas.get_tk_widget().place(x=0, y=120)
+            elif current_tab_text.strip() == "客诉分析":
+                if hasattr(self.analyse_frame.ks_analysis, 'canvas_KS') and self.analyse_frame.ks_analysis.canvas_KS:
+                    self.analyse_frame.ks_analysis.canvas_KS.get_tk_widget().place(x=0, y=120)
+
         elif tab_text.strip() == "Check":
-            # 切换到其他界面时，清除直方图
-            # self.analyse_frame.clear_plot()
+            # 切换到Check界面时不需要特殊处理
             pass
 
 
