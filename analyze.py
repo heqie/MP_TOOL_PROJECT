@@ -17,15 +17,17 @@ FACTORIES = ['海菲', '信利', '易快来', '联创', '创维', '同兴达', '
              '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代', '晶胜通',
              '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显',
              '宏凯', '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示',
-             '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视', '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯','万联','重联']
+             '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视', '轩达', '钜沣', '鹰芒技术',
+             '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威', '天正达', '凯晟', '天山']
 GLASS_TYPES = ['CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA',
                'SHARP', 'MDT', 'HKC', 'HSD', 'INX', 'IVO', 'CTC']
 
-TARGET_ICS = ['7272', '7202M', '7202H']
+TARGET_ICS = ['7272', '7202M', '7202H', '7302']
 YEARS = ['2022年度', '2023年度', '2024年度', '2025年度']
+GRADES = ['v', 'A', 'G', '-', 'NULL']
 
 
-def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL'):
+def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
     """
     根据条件筛选更新次数的项目数量
     :param df: 传入二维数组
@@ -34,6 +36,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     :param glass: 玻璃型号，自动提取字母部分并大写
     :param flash: 是否带Flash（Y/N/ALL）
     :param year: 2023/2024/2025/ALL
+    :param grade:  /-/v/G/A/ALL
     :return: 项目名，统计结果
     """
     # 数据预处理
@@ -50,8 +53,10 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         match = re.match(r'^([A-Za-z]+)', str(g))
         return match.group(1).upper() if match else str(g).upper()
 
+    df_filtered.loc[:, 'Grade'] = df_filtered.iloc[:, 1].astype(str)
     df_filtered.loc[:, 'IC_Norm'] = df_filtered.iloc[:, 6].apply(normalize_ic)
     df_filtered.loc[:, 'Factory'] = df_filtered.iloc[:, 5].astype(str)
+    # df_filtered.loc[:,'Glass_before'] = df.iloc[:, 7].astype(str)
     df_filtered.loc[:, 'Glass_Norm'] = df_filtered.iloc[:, 7].apply(normalize_glass)
     df_filtered.loc[:, 'Flash'] = df_filtered.iloc[:, 9].astype(str).str.upper().apply(
         lambda x: 'Y' if x.startswith('Y') else 'N')
@@ -66,6 +71,8 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
             df_filtered.iloc[:, 5].astype(str) + '_' +
             df_filtered.iloc[:, 7].astype(str)
     )
+    # print(df_filtered.iloc[:, 2].astype(str))
+    # print(df_filtered.loc[:, 'Project_ID'])
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -88,6 +95,11 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     if year != 'ALL':
         df_filtered = df_filtered[df_filtered['Year'] == year]
 
+    if grade != 'ALL':
+        valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
+        valid_projects = valid_projects[valid_projects['Grade'] == grade]['Project_ID']
+        df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
+
     # 统计更新次数（P列）
     df_filtered.loc[:, 'Update_Count'] = df_filtered.iloc[:, 15].astype(str).apply(
         lambda x: 0 if x == '0' else 1)
@@ -99,7 +111,8 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         'Factory': 'first',
         'Glass_Norm': 'first',
         'Flash': 'first',
-        'Year': 'first'
+        'Year': 'first',
+        'Grade': 'first'
     }).reset_index()
 
     # 生成分布统计
@@ -113,6 +126,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {len(project_stats)}）")
     # print(dist_stats.to_string(index=False))
@@ -124,6 +138,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     if glass != 'ALL': conditions.append(f"玻璃: {glass}")
     if flash != 'ALL': conditions.append(f"Flash: {flash}")
     if year != 'ALL': conditions.append(f"年度: {year}")
+    if grade != 'ALL': conditions.append(f"等级: {grade}")
 
     if len(project_stats) == 0:
         print("没有找到符合条件的项目")
@@ -132,7 +147,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     return conditions, dist_stats
 
 
-def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL'):
+def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
     """
     根据条件筛选IC型号项目数量
     :param df: 传入二维数组
@@ -146,6 +161,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     df = df.copy()
 
     # 标准化各列数据
+    df['Grade'] = df.iloc[:, 1].astype(str)
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Factory'] = df.iloc[:, 5].astype(str)  # F列
     df['Glass_before'] = df.iloc[:, 7].astype(str)
@@ -161,6 +177,9 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
     )
 
+    # 创建唯一项目ID（项目+模组厂+玻璃）
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+
     # 应用筛选条件
     if factory != 'ALL':
         df = df[df['Factory'] == factory]
@@ -170,12 +189,12 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
         df = df[df['Flash'] == flash.upper()]
     if year != 'ALL':
         df = df[df['Year'] == year]
-
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    if grade != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Grade'] == grade]
 
     # IC型号匹配（7202M/7202H模糊匹配）
-    pattern = re.compile(r'7272|7202[MH]')
+    pattern = re.compile(r'7272|7202[MH]|7302')
     df['Matched_IC'] = df['IC_Type'].apply(
         lambda x: pattern.search(x).group() if pattern.search(x) else None
     )
@@ -193,6 +212,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(ic_counts.sum())}）")
     print("─" * 40)
@@ -202,6 +222,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if grade != 'ALL': title_conditions.append(f"等级: {grade}")
 
     if len(ic_counts) == 0:
         print("没有找到符合条件的项目")
@@ -210,7 +231,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     return title_conditions, ic_counts
 
 
-def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='ALL'):
+def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='ALL', grade='ALL'):
     """
     根据条件筛选模组厂项目数量
     :param df: 传入二维数组
@@ -222,6 +243,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     """
     df = df.copy()
     # 标准化各列数据
+    df['Grade'] = df.iloc[:, 1].astype(str)
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Factory'] = df.iloc[:, 5].astype(str)  # F列
     df['Glass_before'] = df.iloc[:, 7].astype(str)
@@ -237,6 +259,9 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
         lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
     )
+
+    # 创建唯一项目ID（项目+模组厂+玻璃）
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -256,8 +281,9 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     if year != 'ALL':
         df = df[df['Year'] == year]
 
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    if grade != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Grade'] == grade]
 
     # 只保留定义的模组厂
     df = df[df['Factory'].isin(FACTORIES)]
@@ -275,6 +301,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(factory_counts.sum())}）")
     print("─" * 40)
@@ -285,6 +312,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if grade != 'ALL': title_conditions.append(f"等级: {grade}")
 
     if len(factory_counts) == 0:
         print("没有找到符合条件的项目")
@@ -293,7 +321,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     return title_conditions, factory_counts
 
 
-def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year='ALL'):
+def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year='ALL', grade='ALL'):
     """
     根据条件筛选玻璃厂项目数量
     :param df: 传入二维数组
@@ -307,6 +335,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     df = df.copy()
 
     # 标准化各列数据
+    df['Grade'] = df.iloc[:, 1].astype(str)
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Factory'] = df.iloc[:, 5].astype(str)  # F列
     df['Glass_before'] = df.iloc[:, 7].astype(str)
@@ -322,6 +351,9 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
         lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
     )
+
+    # 创建唯一项目ID（项目+模组厂+玻璃）
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -341,8 +373,9 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     if year != 'ALL':
         df = df[df['Year'] == year]
 
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    if grade != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Grade'] == grade]
 
     # 只保留定义的玻璃类型
     df = df[df['Glass'].isin(GLASS_TYPES)]
@@ -359,6 +392,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(glass_counts.sum())}）")
     print("─" * 40)
@@ -369,6 +403,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if grade != 'ALL': title_conditions.append(f"等级: {grade}")
 
     if len(glass_counts) == 0:
         print("没有找到符合条件的项目")
@@ -377,7 +412,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     return title_conditions, glass_counts
 
 
-def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year='ALL'):
+def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year='ALL', grade='ALL'):
     """
     根据条件筛选Flash项目数量
     :param df: 传入二维数组
@@ -391,6 +426,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     df = df.copy()
 
     # 标准化各列数据
+    df['Grade'] = df.iloc[:, 1].astype(str)
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Factory'] = df.iloc[:, 5].astype(str)  # F列
     df['Glass_before'] = df.iloc[:, 7].astype(str)
@@ -406,6 +442,9 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
         lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
     )
+
+    # 创建唯一项目ID（项目+模组厂+玻璃）
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -425,8 +464,9 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     if year != 'ALL':
         df = df[df['Year'] == year]
 
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    if grade != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Grade'] == grade]
 
     # 按唯一ID去重
     unique_projects = df.drop_duplicates('Unique_ID')
@@ -441,6 +481,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(flash_counts.sum())}）")
     print("─" * 40)
@@ -451,6 +492,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if grade != 'ALL': title_conditions.append(f"等级: {grade}")
 
     if len(flash_counts) == 0:
         print("没有找到符合条件的项目")
@@ -458,9 +500,9 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     return title_conditions, flash_counts
 
 
-def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL'):
+def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', grade='ALL'):
     """
-    根据条件筛选年度项目数量
+    根据条件筛选等级项目数量
     :param df: 传入二维数组
     :param ic_type: 7272/7202M/7202H/ALL
     :param factory: 模组厂
@@ -471,6 +513,7 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     # 数据预处理
     df = df.copy()
     # 标准化各列数据
+    df['Grade'] = df.iloc[:, 1].astype(str)
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Factory'] = df.iloc[:, 5].astype(str)  # F列
     df['Glass_before'] = df.iloc[:, 7].astype(str)
@@ -486,6 +529,9 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
         lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
     )
+
+    # 创建唯一项目ID（项目+模组厂+玻璃）
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -505,8 +551,9 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     if flash != 'ALL':
         df = df[df['Flash'] == flash.upper()]
 
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    if grade != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Grade'] == grade]
 
     # 按唯一ID去重
     unique_projects = df.drop_duplicates('Unique_ID')
@@ -521,10 +568,10 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(year_counts.sum())}）")
     print("─" * 40)
-
 
     # 图表美化
     title_conditions = []
@@ -532,9 +579,97 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
+    if grade != 'ALL': title_conditions.append(f"等级: {grade}")
 
     if len(year_counts) == 0:
         print("没有找到符合条件的项目")
         return title_conditions, pd.Series(dtype=int)  # 返回空Series
 
     return title_conditions, year_counts
+
+
+def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL'):
+    """
+    根据条件筛选年度项目数量
+    :param df: 传入二维数组
+    :param ic_type: 7272/7202M/7202H/ALL
+    :param factory: 模组厂
+    :param glass: 玻璃型号，自动提取字母部分并大写
+    :param flash: 是否带Flash（Y/N/ALL）
+    :return: 项目名，统计结果
+    """
+    # 数据预处理
+    df = df.copy()
+    # 标准化各列数据
+    df['Grade'] = df.iloc[:, 1].astype(str)
+    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
+    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
+    df['Glass_before'] = df.iloc[:, 7].astype(str)
+    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
+        lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper()
+        if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
+    )
+    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
+    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
+        lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
+    )
+    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
+        lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
+        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
+    )
+
+    # 创建唯一项目ID（项目+模组厂+玻璃）
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+
+    # 应用筛选条件
+    if ic_type != 'ALL':
+        if ic_type == '7202M':
+            df = df[df['IC_Type'].str.contains('7202M', na=False)]
+        elif ic_type == '7202H':
+            df = df[df['IC_Type'].str.contains('7202H', na=False)]
+        else:
+            df = df[df['IC_Type'] == ic_type]
+
+    if factory != 'ALL':
+        df = df[df['Factory'] == factory]
+
+    if glass != 'ALL':
+        df = df[df['Glass'] == glass.upper()]
+
+    if flash != 'ALL':
+        df = df[df['Flash'] == flash.upper()]
+
+    if year != 'ALL':
+        df = df[df['Year'] == year]
+
+    # 按唯一ID去重
+    unique_projects = df.drop_duplicates('Unique_ID')
+
+    # 统计年度分布
+    grade_counts = unique_projects['Grade'].value_counts()
+    grade_counts = grade_counts.reindex(GRADES, fill_value=0)
+    # print(year_counts)
+    # 打印筛选条件
+    print("▌ 筛选条件：")
+    print(f"IC型号: {ic_type if ic_type != 'ALL' else '全部'}")
+    print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
+    print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
+    print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
+    print(f"年度: {year if year != 'ALL' else '全部'}")
+    print("─" * 40)
+    print(f"▌统计结果（项目总数: {int(grade_counts.sum())}）")
+    print("─" * 40)
+
+    # 图表美化
+    title_conditions = []
+    if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
+    if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
+    if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
+    if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
+    if year != 'ALL': title_conditions.append(f"年度: {year}")
+
+    if len(grade_counts) == 0:
+        print("没有找到符合条件的项目")
+        return title_conditions, pd.Series(dtype=int)  # 返回空Series
+
+    return title_conditions, grade_counts

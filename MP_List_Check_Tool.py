@@ -6,6 +6,7 @@
 @Author  ：zxh
 @Date    ：2025/3/19 16:20
 '''
+import numpy as np
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk
@@ -120,6 +121,10 @@ class CheckFrame(tk.Frame):
         self.btn_date_format = tk.Button(self, text="发布日期检查", height=1, width=15,
                                          command=lambda: self.run_check("发布日期检查", lambda: check_date_format(self.df)))
 
+        self.btn_project_name = tk.Button(self, text="项目号是否重复检查", height=1, width=15,
+                                          command=lambda: self.run_check("项目号是否重复检查",
+                                                                         lambda: check_same_project(self.df)))
+
         # 结果显示区域
         self.result_area = scrolledtext.ScrolledText(self)
         self.result_area.place(x=10 * multiple, y=90, width=590 * multiple, height=480 * multiple)
@@ -199,18 +204,20 @@ class CheckFrame(tk.Frame):
             self.btn_flash.place_forget()
             self.btn_tool_version.place_forget()
             self.btn_date_format.place_forget()
+            self.btn_project_name.place_forget()
             self.checks_visible = False
         else:
             # 显示功能按钮
             self.result_area.place(x=10 * multiple, y=170, width=590 * multiple, height=400 * multiple)
             self.btn_sequence.place(x=10 * multiple, y=90)
-            self.btn_grade.place(x=160 * multiple, y=90)
-            self.btn_ic_model.place(x=310 * multiple, y=90)
-            self.btn_glass_model.place(x=465 * multiple, y=90)
-            self.btn_interface.place(x=10 * multiple, y=130)
-            self.btn_flash.place(x=160 * multiple, y=130)
-            self.btn_tool_version.place(x=310 * multiple, y=130)
-            self.btn_date_format.place(x=465 * multiple, y=130)
+            self.btn_grade.place(x=120 * multiple, y=90)
+            self.btn_ic_model.place(x=230 * multiple, y=90)
+            self.btn_glass_model.place(x=340 * multiple, y=90)
+            self.btn_interface.place(x=450 * multiple, y=90)
+            self.btn_flash.place(x=10 * multiple, y=130)
+            self.btn_tool_version.place(x=120 * multiple, y=130)
+            self.btn_date_format.place(x=230 * multiple, y=130)
+            self.btn_project_name.place(x=340 * multiple, y=130)
             self.checks_visible = True
 
     def run_check_all(self):
@@ -229,6 +236,7 @@ class CheckFrame(tk.Frame):
             ("flash有无检查", check_flash(self.df.iloc[:, 9], self.df.iloc[:, 8])),
             ("Tool版本号检查", check_tool_version(self.df, self.valid_TOOL_version)),
             ("发布日期检查", check_date_format(self.df)),
+            ("项目号是否重复检查", check_same_project(self.df))
         ]
         # 清空结果显示区域
         self.result_area.config(state=tk.NORMAL)
@@ -245,7 +253,10 @@ class CheckFrame(tk.Frame):
                 self.result_area.insert(tk.END, "FAIL:\n", "red")
                 self.result_area.insert(tk.END, "错误位置:\n", "red")
                 for error in errors:
-                    self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
+                    if check_name == "项目号是否重复检查":
+                        self.result_area.insert(tk.END, f"项目号‘{error[3]}’,重复位置: 行 {error[0]} 和行 {error[1]} \n", "red")
+                    else:
+                        self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
 
                 # 序列检查有问题则启用序号校正按钮
                 if check_name == "序列检查":
@@ -280,7 +291,10 @@ class CheckFrame(tk.Frame):
             self.result_area.insert(tk.END, "FAIL:\n", "red")
             self.result_area.insert(tk.END, "错误位置:\n", "red")
             for error in errors:
-                self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
+                if check_name == "项目号是否重复检查":
+                    self.result_area.insert(tk.END, f"项目号‘{error[3]}’,重复位置: 行 {error[0]} 和行 {error[1]} \n", "red")
+                else:
+                    self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
 
             # 序列检查有问题则启用序号校正按钮
             if check_name == "序列检查":
@@ -323,7 +337,7 @@ class AnalyseFrame(tk.Frame):
         # 创建自定义标签样式
         style.configure('Small.TNotebook.Tab',
                         padding=(3, 1),
-                        font=('Arial',10, 'normal'),
+                        font=('Arial', 10, 'normal'),
                         width=8,
                         anchor='center')
 
@@ -332,11 +346,11 @@ class AnalyseFrame(tk.Frame):
 
         # 创建MP分析标签页
         self.mp_frame = tk.Frame(self.notebook)
-        self.notebook.add(self.mp_frame, text='MP分析',padding=0)
+        self.notebook.add(self.mp_frame, text='MP分析', padding=0)
 
         # 创建客诉分析标签页
         self.ks_frame = tk.Frame(self.notebook)
-        self.notebook.add(self.ks_frame, text='客诉分析',padding=0)
+        self.notebook.add(self.ks_frame, text='客诉分析', padding=0)
 
         # 初始化两个子标签页
         self.init_mp_frame()
@@ -368,6 +382,7 @@ class AnalyseFrame(tk.Frame):
         elif tab_text.strip() == "客诉分析":
             if hasattr(self.ks_analysis, 'canvas_KS') and self.ks_analysis.canvas_KS:
                 self.ks_analysis.canvas_KS.get_tk_widget().place(x=0, y=120)
+
 
 class MPAnalysis(tk.Frame):
     def __init__(self, master=None):
@@ -414,7 +429,7 @@ class MPAnalysis(tk.Frame):
         self.btn_analyse = tk.Button(self, text="项目统计", width=15, command=self.get_xl_to_analyse, state=tk.DISABLED)
         self.btn_analyse.place(x=465 * multiple, y=15)
 
-        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度']
+        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度', '等级']
         self.analyse_dropdown = ttk.Combobox(self, values=self.analyse_values, state="readonly")
         self.analyse_dropdown.current(0)
         self.analyse_dropdown.place(x=475 * multiple, y=60, width=100)
@@ -424,7 +439,7 @@ class MPAnalysis(tk.Frame):
         # 下拉框区域
         self.label_ic = tk.Label(self, text="IC型号:", anchor="e")
         self.label_ic.place(x=0, y=50, width=60)
-        self.ic_values = ["ALL", '7272', '7202H', '7202M']
+        self.ic_values = ["ALL", '7272', '7202H', '7202M', '7302']
         self.ic_dropdown = ttk.Combobox(self, values=self.ic_values, state="readonly")
         self.ic_dropdown.current(0)
         self.ic_dropdown.place(x=60 * multiple, y=50, width=80)
@@ -435,7 +450,8 @@ class MPAnalysis(tk.Frame):
                               '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
                               '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
                               '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
-                              '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯']
+                              '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威', '天正达',
+                              '凯晟', '天山']
         self.module_dropdown = ttk.Combobox(self, values=self.module_values, state="readonly")
         self.module_dropdown.current(0)
         self.module_dropdown.place(x=210 * multiple, y=50, width=80)
@@ -461,6 +477,13 @@ class MPAnalysis(tk.Frame):
         self.year_dropdown = ttk.Combobox(self, values=self.year_values, state="readonly")
         self.year_dropdown.current(0)
         self.year_dropdown.place(x=210 * multiple, y=80, width=80)
+
+        self.label_grade = tk.Label(self, text="等级:", anchor="e")
+        self.label_grade.place(x=300 * multiple, y=80, width=60)
+        self.grade_values = ['ALL', 'v', 'A', 'G', '-', 'NULL']
+        self.grade_dropdown = ttk.Combobox(self, values=self.grade_values, state="readonly")
+        self.grade_dropdown.current(0)
+        self.grade_dropdown.place(x=360 * multiple, y=80, width=80)
 
         # 模组分页设置
         # 初始化分页控件
@@ -513,6 +536,13 @@ class MPAnalysis(tk.Frame):
             self.glass_dropdown.config(state=tk.NORMAL)
             self.flash_dropdown.config(state=tk.NORMAL)
             self.year_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state="readonly")
 
         elif choose == 'IC型号':
             self.ic_dropdown.config(state=tk.DISABLED)
@@ -520,33 +550,79 @@ class MPAnalysis(tk.Frame):
             self.glass_dropdown.config(state=tk.NORMAL)
             self.flash_dropdown.config(state=tk.NORMAL)
             self.year_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state="readonly")
 
         elif choose == '模组厂':
             self.ic_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
             self.module_dropdown.config(state=tk.DISABLED)
             self.glass_dropdown.config(state=tk.NORMAL)
             self.flash_dropdown.config(state=tk.NORMAL)
             self.year_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state="readonly")
+
 
         elif choose == '玻璃厂':
             self.ic_dropdown.config(state=tk.NORMAL)
             self.module_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
             self.glass_dropdown.config(state=tk.DISABLED)
             self.flash_dropdown.config(state=tk.NORMAL)
             self.year_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state="readonly")
 
         elif choose == 'Flash':
             self.ic_dropdown.config(state=tk.NORMAL)
             self.module_dropdown.config(state=tk.NORMAL)
             self.glass_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
             self.flash_dropdown.config(state=tk.DISABLED)
             self.year_dropdown.config(state=tk.NORMAL)
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state="readonly")
+
         elif choose == '年度':
             self.ic_dropdown.config(state=tk.NORMAL)
             self.module_dropdown.config(state=tk.NORMAL)
             self.glass_dropdown.config(state=tk.NORMAL)
             self.flash_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
             self.year_dropdown.config(state=tk.DISABLED)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state="readonly")
+
+        elif choose == '等级':
+            self.ic_dropdown.config(state=tk.NORMAL)
+            self.module_dropdown.config(state=tk.NORMAL)
+            self.glass_dropdown.config(state=tk.NORMAL)
+            self.flash_dropdown.config(state=tk.NORMAL)
+            self.year_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state=tk.DISABLED)
+
 
     def draw_histogram(self, choose, title, counts):
         """
@@ -583,10 +659,11 @@ class MPAnalysis(tk.Frame):
                 plt.xticks(rotation=90, fontsize=10)
             else:
                 plt.xticks(fontsize=10)
-            plt.yticks(fontsize=10)
+            # plt.yticks(fontsize=10)
 
             # 自动调整y轴范围，留出标签空间
             max_value = max(counts.values)
+            plt.yticks(np.arange(0, max_value * 1.15 + 1, step=max(1, int(max_value / 10))), fontsize=10)
             plt.ylim(0, max_value * 1.15)
         else:
             messagebox.showinfo("提示", "该筛选条件下项目数量为0")
@@ -613,8 +690,9 @@ class MPAnalysis(tk.Frame):
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
+                grade = self.grade_dropdown.get()
 
-                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year)
+                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year, grade)
 
                 # 检查DataFrame是否为空
                 if dist_stats.empty or len(dist_stats) == 0:
@@ -657,6 +735,7 @@ class MPAnalysis(tk.Frame):
 
                     # 自动调整y轴范围，留出标签空间
                     max_value = max((dist_stats.iloc[:, 1]))
+                    plt.yticks(np.arange(0, max_value * 1.15 + 1, step=max(1, int(max_value / 10))), fontsize=10)
                     plt.ylim(0, max_value * 1.15)
                 else:
                     messagebox.showinfo("提示", "该筛选条件下项目数量为0")
@@ -667,8 +746,9 @@ class MPAnalysis(tk.Frame):
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
+                grade = self.grade_dropdown.get()
 
-                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year)
+                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year, grade)
                 self.draw_histogram(choose, title_conditions, ic_counts)
 
             elif choose == '模组厂':
@@ -676,7 +756,10 @@ class MPAnalysis(tk.Frame):
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
-                title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year)
+                grade = self.grade_dropdown.get()
+
+                title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year,
+                                                                            grade)
                 self.module_data = factory_counts  # 保存模组厂数据
                 if int(factory_counts.sum()) > 0:
                     # 计算总页数
@@ -728,6 +811,7 @@ class MPAnalysis(tk.Frame):
 
                         # 自动调整x轴范围，留出标签空间
                         # max_value = max(factory_counts.values)
+                        plt.xticks(np.arange(0, max_value * 1.15 + 1, step=max(1, int(max_value / 10))), fontsize=10)
                         plt.xlim(0, max_value * 1.15)
                 elif int(factory_counts.sum()) == 0:
                     messagebox.showinfo("提示", "该筛选条件下项目数量为0")
@@ -737,8 +821,10 @@ class MPAnalysis(tk.Frame):
                 factory = self.module_dropdown.get()
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
+                grade = self.grade_dropdown.get()
 
-                title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year)
+                title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year,
+                                                                          grade)
                 self.draw_histogram(choose, title_conditions, glass_counts)
 
             elif choose == 'Flash':
@@ -746,7 +832,10 @@ class MPAnalysis(tk.Frame):
                 factory = self.module_dropdown.get()
                 glass = self.glass_dropdown.get()
                 year = self.year_dropdown.get()
-                title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year)
+                grade = self.grade_dropdown.get()
+
+                title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year,
+                                                                          grade)
                 self.draw_histogram(choose, title_conditions, flash_counts)
 
 
@@ -755,8 +844,22 @@ class MPAnalysis(tk.Frame):
                 factory = self.module_dropdown.get()
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
-                title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash)
+                grade = self.grade_dropdown.get()
+
+                title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash,
+                                                                          grade)
                 self.draw_histogram(choose, title_conditions, year_counts)
+
+            elif choose == '等级':
+                ic_type = self.ic_dropdown.get()
+                factory = self.module_dropdown.get()
+                glass = self.glass_dropdown.get()
+                flash = self.flash_dropdown.get()
+                year = self.year_dropdown.get()
+
+                title_conditions, grade_counts = statistic_project_by_grade(self.df1, ic_type, factory, glass, flash,
+                                                                          year)
+                self.draw_histogram(choose, title_conditions, grade_counts)
 
             # # 设置网格线
             # f_plot.grid(True, linestyle='--', alpha=0.6)
@@ -838,6 +941,7 @@ class MPAnalysis(tk.Frame):
 
         # 自动调整x轴范围
         global_max = max(self.module_data.values) * 1.15
+        # self.ax.xticks(np.arange(0, global_max * 1.15 + 1, step=max(1, int(global_max / 10))), fontsize=10)
         self.ax.set_xlim(0, global_max)
 
         # 固定x轴刻度
@@ -849,7 +953,7 @@ class MPAnalysis(tk.Frame):
         self.ax.tick_params(axis='y', labelsize=10)
 
         if self.canvas:
-                self.canvas.draw()
+            self.canvas.draw()
 
         # 更新翻页按钮状态
         self.update_page_buttons()
@@ -881,7 +985,6 @@ class MPAnalysis(tk.Frame):
             self.page_label.place(x=460 * multiple, y=500 * multiple)
             self.btn_prev.place(x=530 * multiple, y=500 * multiple)
             self.btn_next.place(x=550 * multiple, y=500 * multiple)
-
 
     def prev_page(self):
         """
@@ -969,7 +1072,8 @@ class KSAnalysis(tk.Frame):
                                  '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
                                  '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
                                  '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
-                                 '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联']
+                                 '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威',
+                                 '天正达', '凯晟', '天山']
         self.module_dropdownKS = ttk.Combobox(self, values=self.module_values_KS, state="readonly")
         self.module_dropdownKS.current(0)
         self.module_dropdownKS.place(x=165 * multiple, y=50, width=70)
@@ -1061,6 +1165,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            # self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '模组厂':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1071,6 +1183,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            self.ic_dropdownKS.config(state="readonly")
+            # self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '玻璃厂':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1081,6 +1201,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            # self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '年度':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1091,6 +1219,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            # self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '转接AE与否':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1101,6 +1237,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            # self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '结案与否':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1111,6 +1255,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.DISABLED)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            # self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '客诉类型':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1121,6 +1273,14 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.DISABLED)
             self.principal_dropdownKS.config(state=tk.NORMAL)
+            self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            # self.type_dropdownKS.config(state="readonly")
+            self.principal_dropdownKS.config(state="readonly")
 
         elif choose == '负责人':
             self.ic_dropdownKS.config(state=tk.NORMAL)
@@ -1131,8 +1291,17 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state=tk.NORMAL)
             self.type_dropdownKS.config(state=tk.NORMAL)
             self.principal_dropdownKS.config(state=tk.DISABLED)
+            self.ic_dropdownKS.config(state="readonly")
+            self.module_dropdownKS.config(state="readonly")
+            self.glass_dropdownKS.config(state="readonly")
+            self.year_dropdownKS.config(state="readonly")
+            self.AE_dropdownKS.config(state="readonly")
+            self.over_dropdownKS.config(state="readonly")
+            self.type_dropdownKS.config(state="readonly")
+            # self.principal_dropdownKS.config(state="readonly")
 
-    def draw_histogram_KS(self,choose,title,counts):
+
+    def draw_histogram_KS(self, choose, title, counts):
         """
         绘制直方图
         :param choose: X粥
@@ -1156,21 +1325,22 @@ class KSAnalysis(tk.Frame):
                          f'{int(height)}',
                          ha='center', va='bottom', fontsize=11, weight='bold')
 
-            a_title = choose+"客诉数量统计"
+            a_title = choose + "客诉数量统计"
             if title:
-                a_title +="\n(" + " | ".join(title) + ")"
+                a_title += "\n(" + " | ".join(title) + ")"
 
             plt.title(a_title, fontsize=14, pad=10)
             plt.xlabel(choose, fontsize=12)
             plt.ylabel('客诉记录数量', fontsize=12)
             if choose == '模组厂':
-                plt.xticks(rotation=90,fontsize=10)
+                plt.xticks(rotation=90, fontsize=10)
             else:
                 plt.xticks(fontsize=10)
-            plt.yticks(fontsize=10)
+            # plt.yticks(fontsize=10)
 
             # 自动调整y轴范围，留出标签空间
             max_value = max(counts.values)
+            plt.yticks(np.arange(0, max_value * 1.15 + 1, step=max(1, int(max_value / 10))), fontsize=10)
             plt.ylim(0, max_value * 1.15)
         else:
             messagebox.showinfo("提示", "该筛选条件下项目数量为0")
@@ -1220,7 +1390,8 @@ class KSAnalysis(tk.Frame):
                 type = self.type_dropdownKS.get()
                 principal = self.principal_dropdownKS.get()
 
-                title_conditions, glass_counts = statistic_glass_projects_KS(self.df_KS, factory,ic_type,year, transfer_AE, over, type,principal)
+                title_conditions, glass_counts = statistic_glass_projects_KS(self.df_KS, factory, ic_type, year,
+                                                                             transfer_AE, over, type, principal)
                 self.draw_histogram_KS(choose, title_conditions, glass_counts)
 
             elif choose == '年度':
@@ -1245,7 +1416,9 @@ class KSAnalysis(tk.Frame):
                 type = self.type_dropdownKS.get()
                 principal = self.principal_dropdownKS.get()
 
-                title_conditions, transferAE_counts = statistic_project_transferAE_KS(self.df_KS, factory,ic_type,glass,year, over, type,principal)
+                title_conditions, transferAE_counts = statistic_project_transferAE_KS(self.df_KS, factory, ic_type,
+                                                                                      glass, year, over, type,
+                                                                                      principal)
                 self.draw_histogram_KS(choose, title_conditions, transferAE_counts)
 
             elif choose == '结案与否':
@@ -1257,7 +1430,8 @@ class KSAnalysis(tk.Frame):
                 type = self.type_dropdownKS.get()
                 principal = self.principal_dropdownKS.get()
 
-                title_conditions, over_counts = statistic_project_over_KS(self.df_KS, factory, ic_type, glass, year, transfer_AE, type, principal)
+                title_conditions, over_counts = statistic_project_over_KS(self.df_KS, factory, ic_type, glass, year,
+                                                                          transfer_AE, type, principal)
                 self.draw_histogram_KS(choose, title_conditions, over_counts)
 
             elif choose == '客诉类型':
@@ -1269,7 +1443,8 @@ class KSAnalysis(tk.Frame):
                 over = self.over_dropdownKS.get()
                 principal = self.principal_dropdownKS.get()
 
-                title_conditions, type_counts = statistic_project_type_KS(self.df_KS, factory,ic_type,glass,year, transfer_AE, over,principal)
+                title_conditions, type_counts = statistic_project_type_KS(self.df_KS, factory, ic_type, glass, year,
+                                                                          transfer_AE, over, principal)
                 self.draw_histogram_KS(choose, title_conditions, type_counts)
 
             elif choose == '负责人':
@@ -1281,7 +1456,8 @@ class KSAnalysis(tk.Frame):
                 over = self.over_dropdownKS.get()
                 type = self.type_dropdownKS.get()
 
-                title_conditions, principal_counts = statistic_project_principal_KS(self.df_KS, factory,ic_type,glass,year, transfer_AE, over,type)
+                title_conditions, principal_counts = statistic_project_principal_KS(self.df_KS, factory, ic_type, glass,
+                                                                                    year, transfer_AE, over, type)
                 self.draw_histogram_KS(choose, title_conditions, principal_counts)
             # # 设置网格线
             # f_plot.grid(True, linestyle='--', alpha=0.6)

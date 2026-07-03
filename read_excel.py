@@ -44,7 +44,7 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                 # 读取对比文件
                 valid_data_file = 'compare_information.xlsx'
                 try:
-                    valid_data = read_compare_excel(valid_data_file, sheet_names=None)
+                    valid_data = read_compare_excel(valid_data_file, sheet_names='sheet1')
                     if valid_data is not None and not valid_data.empty:
                         change_before_project = valid_data.iloc[:, 4].dropna().tolist()
                         change_after_project = valid_data.iloc[:, 5].dropna().tolist()
@@ -177,10 +177,12 @@ def read_excel_for_analyse(file_path, sheet_name):
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
 
                 df.iloc[:, 2] = df.iloc[:, 2].ffill()
+
                 # 模组厂
                 df.iloc[:, 5] = df.iloc[:, 5].ffill()
                 df.replace({
                     '汉龙': '汉龙时代',
+                    '汉龙时代光电': '汉龙时代',
                     '轩达百业': '轩达',
                     '轩达(百业代工）': '轩达',
                     '轩达（星星科技代工）': '轩达',
@@ -191,7 +193,12 @@ def read_excel_for_analyse(file_path, sheet_name):
                     '大通': '大通显示',
                     '菲触': '菲触显视',
                     '宏利': '宏利超显',
-                    '瑞恒': '瑞恒光电'
+                    '瑞恒': '瑞恒光电',
+                    '湖南金宏光电': '金宏光电',
+                    '新显': '长信新显',
+                    'V': 'v',
+                    'a': 'A',
+                    'g': 'G'
                 }, inplace=True)
 
                 df.iloc[:, 10] = df.iloc[:, 10].ffill()
@@ -204,12 +211,20 @@ def read_excel_for_analyse(file_path, sheet_name):
                 # flash
                 df.iloc[:, 9] = df.iloc[:, 9].ffill()
 
+                # df.iloc[:, 1] = df.iloc[:, 1].replace('NAN', 'a')
+
                 # 将空字符串（excel单元格为文本类型）单元格数据替换为0
-                df = df.replace('', '0')
+                # df = df.replace('', '0')
                 # # 填充非文本类型单元格数据为0
+                for idx, value in enumerate(df.iloc[:, 1]):
+                    if pd.isna(value):
+                        df.iloc[idx, 1] = 'NULL'
+
                 df = df.fillna(0)
                 # 删除字符串中的空格和换行符
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
+
+                # df.to_excel('output.xlsx', index=False)
 
         return df
     except Exception as e:
@@ -249,24 +264,24 @@ def read_excel_for_analyseKS(file_path, sheet_name):
                 df = pd.DataFrame(df)
                 # # 删除字符串中的空格和换行符
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
-                #将合并单元格填充相同的内容
-                for i in range(0,14):
+                # 将合并单元格填充相同的内容
+                for i in range(0, 14):
                     df.iloc[:, i] = df.iloc[:, i].ffill()
 
                 # df.iloc[:, 12] = df.iloc[:, 12].astype(str).str.replace(r'\(.*?\)', '', regex=True)  # 英文括号
                 # df.iloc[:, 12].replace(r"\(.*?\）", "", regex=True)  # 中文括号
 
-                #客诉类型去掉括号及其括号内容
+                # 客诉类型去掉括号及其括号内容
                 df.iloc[:, 12] = df.iloc[:, 12].apply(lambda x: remove_parentheses(str(x)))
-                #替代部分不规范字符
+                # 替代部分不规范字符
                 df.replace({
                     'Y': '是',
                     'N': '否',
-                    '大通':'大通显示',
-                    '汉龙':'汉龙时代',
-                    '立德/新显':'长信新显',
-                    '新显':'长信新显',
-                    'IC来料、玻璃':'玻璃'
+                    '大通': '大通显示',
+                    '汉龙': '汉龙时代',
+                    '立德/新显': '长信新显',
+                    '新显': '长信新显',
+                    'IC来料、玻璃': '玻璃'
                 }, inplace=True)
 
                 # 删除字符串中的空格和换行符

@@ -9,6 +9,7 @@
 import pandas as pd
 import re
 import openpyxl
+from read_excel import *
 
 
 def check_sequence(df):
@@ -136,7 +137,7 @@ def check_ic_model(column, valid_IC):
         if pd.isna(value) or value == 0:
             errors.append((idx + 2, 'IC', "IC为空值"))
             continue
-        if value == 7272:
+        if value == 7272 or value == 7302:
             continue
         if str(value) not in valid_IC:  # 将值转换为字符串进行比较
             errors.append((idx + 2, 'IC', value))
@@ -292,3 +293,49 @@ def fix_sequence(file_path, errors):
     workbook.save(output_file_path)
 
     # print(f"文件已保存为 {output_file_path}")
+
+
+def check_same_project(df):
+    '''
+    检查是否有相同项目号
+    :param df: 数组
+    :return:
+    '''
+    errors = []
+    project_column = df.iloc[:, 2]  # C列 - 项目号
+    sequence_column = df.iloc[:, 0]  # A列 - 序号
+
+    # 创建一个字典来跟踪每个项目号的出现情况
+    # 格式: {项目号: (首次出现的行号, 首次出现的序号)}
+    project_dict = {}
+
+    for idx, (project, seq) in enumerate(zip(project_column, sequence_column)):
+        row_num = idx + 2  # Excel行号从2开始
+
+        # 跳过空值或无效项目号的行
+        if pd.isna(project) or project == '':
+            continue
+
+        # 跳过空序号的行（如果需要）
+        if pd.isna(seq) or seq == '':
+            continue
+
+        # 检查项目号是否已存在
+        if project in project_dict:
+            first_row, first_seq = project_dict[project]
+            # 只有当序号不同时才报错
+            if seq != first_seq:
+                errors.append((first_row, row_num, '项目号', project))
+        else:
+            # 记录项目号第一次出现的位置和序号
+            project_dict[project] = (row_num, seq)
+
+    return errors
+
+#debug
+# file_path='Project MP List&MP Flow List&CUT4兼容&HV noise .xlsx'
+# sheet_name='MP Project List（internal）'
+# df=read_excel_with_merged_cells(file_path, sheet_name)
+# errors = check_same_project(df)
+# for error in errors:
+#     print(f"项目号 '{error[3]}' 在行 {error[0]} 和行 {error[1]} 重复")
