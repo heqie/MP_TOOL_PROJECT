@@ -1,0 +1,2 @@
+打包指令：
+pyinstaller -w --i 111.ico --upx-dir "D:\upx-5.0.0-win64" MP_List_Check_Tool.py
