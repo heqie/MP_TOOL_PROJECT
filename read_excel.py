@@ -44,7 +44,7 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                 # 读取对比文件
                 valid_data_file = 'compare_information.xlsx'
                 try:
-                    valid_data = read_compare_excel(valid_data_file, sheet_names='sheet1')
+                    valid_data = read_compare_excel(valid_data_file, sheet_names='Sheet1')
                     if valid_data is not None and not valid_data.empty:
                         change_before_project = valid_data.iloc[:, 4].dropna().tolist()
                         change_after_project = valid_data.iloc[:, 5].dropna().tolist()
@@ -98,6 +98,7 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                 # 向下填充NAN值
                 df.iloc[:, 0] = df.iloc[:, 0].ffill()
                 df.iloc[:, 2] = df.iloc[:, 2].ffill()
+                df.iloc[:, 5] = df.iloc[:, 5].ffill()
                 df.iloc[:, 6] = df.iloc[:, 6].ffill()
                 df.iloc[:, 7] = df.iloc[:, 7].ffill()
                 df.iloc[:, 8] = df.iloc[:, 8].ffill()
@@ -176,8 +177,10 @@ def read_excel_for_analyse(file_path, sheet_name):
                 # 删除字符串中的空格和换行符
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
 
+                # df.iloc[:, 1].astype(str).str.upper()
                 df.iloc[:, 2] = df.iloc[:, 2].ffill()
-
+                #终端
+                df.iloc[:, 3] = df.iloc[:, 3].ffill()
                 # 模组厂
                 df.iloc[:, 5] = df.iloc[:, 5].ffill()
                 df.replace({
@@ -190,15 +193,15 @@ def read_excel_for_analyse(file_path, sheet_name):
                     '重庆联创': '联创',
                     '两江联创': '联创',
                     '万年联创': '联创',
+                    '万联': '联创',
+                    '重联': '联创',
                     '大通': '大通显示',
                     '菲触': '菲触显视',
                     '宏利': '宏利超显',
                     '瑞恒': '瑞恒光电',
                     '湖南金宏光电': '金宏光电',
                     '新显': '长信新显',
-                    'V': 'v',
-                    'a': 'A',
-                    'g': 'G'
+                    '天山': '天山电子',
                 }, inplace=True)
 
                 df.iloc[:, 10] = df.iloc[:, 10].ffill()
@@ -281,7 +284,9 @@ def read_excel_for_analyseKS(file_path, sheet_name):
                     '汉龙': '汉龙时代',
                     '立德/新显': '长信新显',
                     '新显': '长信新显',
-                    'IC来料、玻璃': '玻璃'
+                    'IC来料、玻璃': '玻璃',
+                    '万联': '联创',
+                    '重联': '联创',
                 }, inplace=True)
 
                 # 删除字符串中的空格和换行符

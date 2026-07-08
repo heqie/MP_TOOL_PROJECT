@@ -9,22 +9,38 @@
 import pandas as pd
 from datetime import datetime
 import re
+from read_excel import *
 
-# 全局变量
-IC_TYPES = ['7272', '7202M', '7202H']
-FACTORIES = ['海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙',
-             '合力泰', '华显', '维立', '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏',
-             '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代', '晶胜通',
-             '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显',
-             '宏凯', '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示',
-             '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视', '轩达', '钜沣', '鹰芒技术',
-             '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威', '天正达', '凯晟', '天山']
-GLASS_TYPES = ['CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA',
-               'SHARP', 'MDT', 'HKC', 'HSD', 'INX', 'IVO', 'CTC']
+# # 全局变量
+data_file = 'compare_information.xlsx'
+datas = read_compare_excel(data_file, sheet_names='Sheet2')
+TARGET_ICS = datas.iloc[:, 0].dropna().astype(str).tolist()
+FACTORIES = datas.iloc[:, 1].dropna().tolist()
+GLASS_TYPES = datas.iloc[:, 2].dropna().tolist()
+YEARS = datas.iloc[:, 3].dropna().tolist()
+GRADES = datas.iloc[:, 4].dropna().tolist()
+GRADES.append('NULL')
 
-TARGET_ICS = ['7272', '7202M', '7202H', '7302']
-YEARS = ['2022年度', '2023年度', '2024年度', '2025年度']
-GRADES = ['v', 'A', 'G', '-', 'NULL']
+
+# print(TARGET_ICS)
+# print(FACTORIES)
+# print(GLASS_TYPES)
+# print(YEARS)
+# print(GRADES)
+# IC_TYPES = ['7272', '7202M', '7202H']
+# FACTORIES = ['海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙',
+#              '合力泰', '华显', '维立', '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏',
+#              '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代', '晶胜通',
+#              '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显',
+#              '宏凯', '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示',
+#              '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视', '轩达', '钜沣', '鹰芒技术',
+#              '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '凯晟']
+# GLASS_TYPES = ['CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA',
+#                'SHARP', 'MDT', 'HKC', 'HSD', 'INX', 'IVO', 'CTC']
+#
+# TARGET_ICS = ['7272', '7202M', '7202H', '7302']
+# YEARS = ['2022年度', '2023年度', '2024年度', '2025年度']
+# GRADES = ['v', 'A', 'G', '-', 'NULL']
 
 
 def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
@@ -47,13 +63,13 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         ic = str(ic).upper()
         if '7202M' in ic: return '7202M'
         if '7202H' in ic: return '7202H'
-        return ic if ic in IC_TYPES else 'OTHER'
+        return ic if ic in TARGET_ICS else 'OTHER'
 
     def normalize_glass(g):
         match = re.match(r'^([A-Za-z]+)', str(g))
         return match.group(1).upper() if match else str(g).upper()
 
-    df_filtered.loc[:, 'Grade'] = df_filtered.iloc[:, 1].astype(str)
+    df_filtered.loc[:, 'Grade'] = df_filtered.iloc[:, 1].astype(str).str.upper()
     df_filtered.loc[:, 'IC_Norm'] = df_filtered.iloc[:, 6].apply(normalize_ic)
     df_filtered.loc[:, 'Factory'] = df_filtered.iloc[:, 5].astype(str)
     # df_filtered.loc[:,'Glass_before'] = df.iloc[:, 7].astype(str)
@@ -61,18 +77,18 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     df_filtered.loc[:, 'Flash'] = df_filtered.iloc[:, 9].astype(str).str.upper().apply(
         lambda x: 'Y' if x.startswith('Y') else 'N')
     df_filtered.loc[:, 'Year'] = df_filtered.iloc[:, 16].astype(str).apply(
-        lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}"
+        lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x)
         else 'UNKNOWN')
 
     # 创建唯一项目ID
     df_filtered.loc[:, 'Project_ID'] = (
             df_filtered.iloc[:, 2].astype(str) + '_' +
+            df_filtered.iloc[:, 3].astype(str) + '_' +
             df_filtered.iloc[:, 5].astype(str) + '_' +
             df_filtered.iloc[:, 7].astype(str)
     )
-    # print(df_filtered.iloc[:, 2].astype(str))
-    # print(df_filtered.loc[:, 'Project_ID'])
+    # print(df_filtered.iloc[:, 3].astype(str))
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -93,12 +109,18 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         df_filtered = df_filtered[df_filtered['Flash'] == flash.upper()]
 
     if year != 'ALL':
-        df_filtered = df_filtered[df_filtered['Year'] == year]
+        # df_filtered = df_filtered[df_filtered['Year'] == year]
+        valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
+        valid_projects = valid_projects[valid_projects['Year'] == year]['Project_ID']
+        df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
 
     if grade != 'ALL':
-        valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
-        valid_projects = valid_projects[valid_projects['Grade'] == grade]['Project_ID']
-        df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
+        # valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
+        # df_filtered = df_filtered[df_filtered['Grade'] == grade]['Project_ID']
+        # df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
+        df_filtered = df_filtered[df_filtered['Grade'] == grade]
+        # grade_projects = df_filtered[df_filtered['Grade'] == grade]['Project_ID'].unique()
+        # df_filtered = df_filtered[df_filtered['Project_ID'].isin(grade_projects)]
 
     # 统计更新次数（P列）
     df_filtered.loc[:, 'Update_Count'] = df_filtered.iloc[:, 15].astype(str).apply(
@@ -115,6 +137,8 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         'Grade': 'first'
     }).reset_index()
 
+    # 去除更新次数为0的项目统计
+    project_stats = project_stats[project_stats['Update_Count'] > 0]
     # 生成分布统计
     dist_stats = project_stats['Update_Count'].value_counts().sort_index().reset_index()
     dist_stats.columns = ['Update_Count', 'Project_Count']
@@ -131,6 +155,12 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     print(f"▌统计结果（项目总数: {len(project_stats)}）")
     # print(dist_stats.to_string(index=False))
     print("─" * 40)
+    # if (year == '2025年度' and grade == 'G'):
+    #     unique_projects = df_filtered['Project_ID'].unique()
+    #     for idx, project_id in enumerate(unique_projects, 1):
+    #         print(f"{idx}. {project_id}")
+    #     print(f"总计: {len(unique_projects)}个项目")
+    #     print("─" * 40)
 
     conditions = []
     if ic_type != 'ALL': conditions.append(f"IC: {ic_type}")
@@ -147,22 +177,20 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     return conditions, dist_stats
 
 
-def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
-    """
-    根据条件筛选IC型号项目数量
-    :param df: 传入二维数组
-    :param factory: 模组厂
-    :param glass: 玻璃型号，自动提取字母部分并大写
-    :param flash: 是否带Flash（Y/N/ALL）
-    :param year: 2023/2024/2025/ALL
-    :return: 项目名，统计结果
-    """
+
+def normolization_data( df):
+    '''
+    规范化excel表客诉记录数据结构
+    :param df: 二维数组
+    :return: 规范后的数据
+    '''
     # 数据预处理
     df = df.copy()
 
     # 标准化各列数据
-    df['Grade'] = df.iloc[:, 1].astype(str)
+    df['Grade'] = df.iloc[:, 1].astype(str).str.upper()
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
+    df['Terminal_Name'] = df.iloc[:, 3].astype(str)  # D列
     df['Factory'] = df.iloc[:, 5].astype(str)  # F列
     df['Glass_before'] = df.iloc[:, 7].astype(str)
     df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
@@ -173,13 +201,35 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
         lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
     )
     df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
-        lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
-        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
+        lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
+        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
     )
 
     # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
 
+    #特殊处理
+    target_id = "HW09_图高_海菲_CSOT6.56"
+    df.loc[df['Unique_ID'] == target_id, 'Grade'] = 'G'
+
+    # modified_count = (df['Unique_ID'] == target_id).sum()
+    # if modified_count > 0:
+    #     print(f"已将 {modified_count} 条记录的Grade修改为G（项目ID: {target_id}）")
+
+    return df
+
+
+def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
+    """
+    根据条件筛选IC型号项目数量
+    :param df: 传入二维数组
+    :param factory: 模组厂
+    :param glass: 玻璃型号，自动提取字母部分并大写
+    :param flash: 是否带Flash（Y/N/ALL）
+    :param year: 2023/2024/2025/ALL
+    :return: 项目名，统计结果
+    """
+    df = normolization_data(df)
     # 应用筛选条件
     if factory != 'ALL':
         df = df[df['Factory'] == factory]
@@ -188,6 +238,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     if flash != 'ALL':
         df = df[df['Flash'] == flash.upper()]
     if year != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Year'] == year]
     if grade != 'ALL':
         df = df.drop_duplicates('Unique_ID', keep='first')
@@ -241,27 +292,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     :param year: 2023/2024/2025/ALL
     :return: 项目名，统计结果
     """
-    df = df.copy()
-    # 标准化各列数据
-    df['Grade'] = df.iloc[:, 1].astype(str)
-    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
-    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
-    df['Glass_before'] = df.iloc[:, 7].astype(str)
-    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
-        lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper()
-        if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
-    )
-    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
-    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
-        lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
-    )
-    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
-        lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
-        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
-    )
-
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df = normolization_data(df)
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -279,6 +310,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
         df = df[df['Flash'] == flash.upper()]
 
     if year != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Year'] == year]
 
     if grade != 'ALL':
@@ -331,29 +363,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     :param year: 2023/2024/2025/ALL
     :return: 项目名，统计结果
     """
-    # 数据预处理
-    df = df.copy()
-
-    # 标准化各列数据
-    df['Grade'] = df.iloc[:, 1].astype(str)
-    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
-    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
-    df['Glass_before'] = df.iloc[:, 7].astype(str)
-    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
-        lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper()
-        if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
-    )
-    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
-    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
-        lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
-    )
-    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
-        lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
-        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
-    )
-
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df = normolization_data(df)
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -371,6 +381,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
         df = df[df['Flash'] == flash.upper()]
 
     if year != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Year'] == year]
 
     if grade != 'ALL':
@@ -422,29 +433,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     :param year: 2023/2024/2025/ALL
     :return: 项目名，统计结果
     """
-    # 数据预处理
-    df = df.copy()
-
-    # 标准化各列数据
-    df['Grade'] = df.iloc[:, 1].astype(str)
-    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
-    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
-    df['Glass_before'] = df.iloc[:, 7].astype(str)
-    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
-        lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper()
-        if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
-    )
-    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
-    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
-        lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
-    )
-    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
-        lambda x: str(datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year)
-        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知'
-    )
-
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df = normolization_data(df)
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -462,6 +451,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
         df = df[df['Glass'] == glass.upper()]
 
     if year != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Year'] == year]
 
     if grade != 'ALL':
@@ -510,28 +500,7 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     :param flash: 是否带Flash（Y/N/ALL）
     :return: 项目名，统计结果
     """
-    # 数据预处理
-    df = df.copy()
-    # 标准化各列数据
-    df['Grade'] = df.iloc[:, 1].astype(str)
-    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
-    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
-    df['Glass_before'] = df.iloc[:, 7].astype(str)
-    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
-        lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper()
-        if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
-    )
-    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
-    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
-        lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
-    )
-    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
-        lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
-        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
-    )
-
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df = normolization_data(df)
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -572,6 +541,12 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(year_counts.sum())}）")
     print("─" * 40)
+    # if ( grade == 'G'):
+    #     unique_projects = df['Unique_ID'].unique()
+    #     for idx, project_id in enumerate(unique_projects, 1):
+    #         print(f"{idx}. {project_id}")
+    #     print(f"总计: {len(unique_projects)}个项目")
+    #     print("─" * 40)
 
     # 图表美化
     title_conditions = []
@@ -598,28 +573,7 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
     :param flash: 是否带Flash（Y/N/ALL）
     :return: 项目名，统计结果
     """
-    # 数据预处理
-    df = df.copy()
-    # 标准化各列数据
-    df['Grade'] = df.iloc[:, 1].astype(str)
-    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
-    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
-    df['Glass_before'] = df.iloc[:, 7].astype(str)
-    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
-        lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper()
-        if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
-    )
-    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
-    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
-        lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
-    )
-    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
-        lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
-        if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
-    )
-
-    # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df = normolization_data(df)
 
     # 应用筛选条件
     if ic_type != 'ALL':
@@ -640,6 +594,7 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
         df = df[df['Flash'] == flash.upper()]
 
     if year != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Year'] == year]
 
     # 按唯一ID去重
@@ -659,6 +614,7 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(grade_counts.sum())}）")
     print("─" * 40)
+
 
     # 图表美化
     title_conditions = []

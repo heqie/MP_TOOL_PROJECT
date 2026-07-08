@@ -8,6 +8,9 @@
 '''
 import numpy as np
 import pandas as pd
+from openpyxl import load_workbook
+import os
+from openpyxl import Workbook
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox, scrolledtext
@@ -26,6 +29,198 @@ plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 multiple = 1.2
+
+
+class EditableCombobox(ttk.Combobox):
+    def __init__(self, master=None, category=None, **kwargs):
+        values = kwargs.pop('values', [])
+        super().__init__(master, **kwargs)
+        self.category = category
+        self._original_values = values.copy()  # 初始值
+        self._excel_values = []  # 从Excel读取的值
+        self['values'] = values
+        self._edit_mode = False
+        self._last_valid_value = ""
+
+        self['values'] = self._original_values
+        self._edit_mode = False
+        self._last_valid_value = ""
+
+        # 绑定事件
+        self.bind('<KeyRelease>', self._on_key_release)
+        self.bind('<FocusOut>', self._on_focus_out)
+        self.bind('<Button-3>', self._on_right_click)
+        self.bind('<Escape>', self._cancel_edit)
+
+        self._update_state()
+        self._ensure_excel_file()
+        self._load_values_from_excel()
+
+    def _ensure_excel_file(self):
+        """确保Excel文件存在"""
+        if not os.path.exists('compare_information.xlsx'):
+            df = pd.DataFrame(columns=['IC', 'Module', 'Glass', 'Year', 'Grade', 'Type', 'Principal'])
+            df.to_excel('compare_information.xlsx', index=False)
+
+    def _load_values_from_excel(self):
+        """从Excel文件加载已有选项"""
+        try:
+            excel_path = 'compare_information.xlsx'
+            if not os.path.exists(excel_path):
+                return
+
+            df = pd.read_excel(excel_path, sheet_name='Sheet2')
+            if self.category and not df.empty and self.category in df.columns:
+                # 保持Excel中的原始顺序，只去除空值
+                self._excel_values = [v for v in df[self.category].tolist() if pd.notna(v)]
+
+                # 合并初始值和Excel值，去除重复项但保持顺序
+                combined = []
+                seen = set()
+                for v in self._original_values:
+                    if v not in seen:
+                        seen.add(v)
+                        combined.append(v)
+
+                for v in self._excel_values:
+                    if v not in seen:
+                        seen.add(v)
+                        combined.append(v)
+
+                self._original_values = combined
+                self['values'] = combined
+
+        except Exception as e:
+            print(f"加载Excel选项失败: {e}")
+
+    def _update_state(self):
+        """更新控件状态"""
+        if self._edit_mode:
+            self.config(state="normal")
+            self.config(background="#FFFACD")  # 浅黄色背景表示编辑模式
+            self.config(foreground="black")
+            # 显示提示工具提示
+            self.tooltip = tk.Toplevel(self)
+            self.tooltip.wm_overrideredirect(True)
+            self.tooltip_label = tk.Label(self.tooltip, text="右键保存", bg="yellow", fg="black")
+            self.tooltip_label.pack()
+            # 定位提示框
+            x = self.winfo_rootx() + self.winfo_width()
+            y = self.winfo_rooty()
+            self.tooltip.wm_geometry(f"+{x}+{y}")
+        else:
+            self.config(state="readonly")
+            self.config(background="SystemButtonFace")
+            self.config(foreground="black")
+            # 移除工具提示
+            if hasattr(self, 'tooltip'):
+                self.tooltip.destroy()
+
+    def _on_right_click(self, event=None):
+        """右键单击事件处理"""
+        if self._edit_mode:
+            # 如果当前是编辑模式，保存并退出
+            current_text = self.get()
+            if current_text and current_text not in self._original_values and self.category:
+                # 添加到当前选项列表
+                self._original_values.append(current_text)
+                self['values'] = self._original_values
+                self._save_to_excel(current_text)
+            elif current_text in self._original_values:
+                # 如果是已有值，确保选中它
+                self.set(current_text)
+            self._edit_mode = False
+        else:
+            # 如果当前是只读模式，进入编辑模式
+            self._edit_mode = True
+            self._last_valid_value = self.get()  # 记录当前值
+            self.icursor(tk.END)
+            self.selection_range(0, tk.END)
+            self.focus_set()
+
+        self._update_state()
+
+    def _on_key_release(self, event):
+        """按键释放事件处理 - 自动匹配已有选项"""
+        if not self._edit_mode:
+            return
+
+        current_text = self.get()
+        if current_text:
+            matches = [v for v in self._original_values if str(v).lower().startswith(current_text.lower())]
+            self['values'] = matches if matches else self._original_values
+        else:
+            self['values'] = self._original_values
+
+    def _on_focus_out(self, event):
+        """失去焦点事件处理"""
+        if self._edit_mode:
+            current_text = self.get()
+            if current_text and current_text not in self._original_values and self.category:
+                # 添加到当前选项列表
+                self._original_values.append(current_text)
+                self['values'] = self._original_values
+                self._save_to_excel(current_text)
+            elif current_text in self._original_values:
+                # 如果是已有值，确保选中它
+                self.set(current_text)
+            self._edit_mode = False
+            self._update_state()
+
+    def _cancel_edit(self, event=None):
+        """取消编辑"""
+        if self._edit_mode:
+            self._edit_mode = False
+            self.set(self._last_valid_value)  # 恢复上次有效值
+            self._update_state()
+
+    def _save_to_excel(self, new_value):
+        """保存新选项到Excel文件"""
+        try:
+            excel_path = 'compare_information.xlsx'
+
+            try:
+                book = load_workbook(excel_path)
+                if 'Sheet2' not in book.sheetnames:
+                    book.create_sheet('Sheet2')
+                    book.save(excel_path)
+            except:
+                book = Workbook()
+                if 'Sheet' in book.sheetnames:
+                    book['Sheet'].title = 'Sheet2'
+                else:
+                    book.create_sheet('Sheet2')
+                book.save(excel_path)
+
+            # 读取或创建DataFrame
+            try:
+                df = pd.read_excel(excel_path, sheet_name='Sheet2')
+            except:
+                df = pd.DataFrame()
+
+            if self.category not in df.columns:
+                df[self.category] = pd.NA
+            # 查找该列的第一个空白行
+            empty_row_index = None
+            for idx, value in enumerate(df[self.category]):
+                if pd.isna(value) or value == '':
+                    empty_row_index = idx
+                    break
+
+            # 如果有空白行，则在该行写入新值
+            if empty_row_index is not None:
+                df.at[empty_row_index, self.category] = new_value
+            else:
+                # 如果没有空白行，则在末尾添加新行
+                new_row = {col: pd.NA for col in df.columns}
+                new_row[self.category] = new_value
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            # 保存回Excel
+            with pd.ExcelWriter(excel_path, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                df.to_excel(writer, sheet_name='Sheet2', index=False)
+
+        except Exception as e:
+            print(f"保存选项到Excel失败: {e}")
 
 
 class CheckFrame(tk.Frame):
@@ -167,7 +362,7 @@ class CheckFrame(tk.Frame):
                 # 读取对比文件
                 valid_data_file = 'compare_information.xlsx'
                 try:
-                    valid_data = read_compare_excel(valid_data_file, sheet_names=None)
+                    valid_data = read_compare_excel(valid_data_file, sheet_names='Sheet1')
                     if valid_data is not None and not valid_data.empty:
                         self.valid_TOOL_version = valid_data.iloc[:, 1].dropna().tolist()
                         self.valid_glass_models = valid_data.iloc[:, 2].dropna().tolist()
@@ -439,28 +634,34 @@ class MPAnalysis(tk.Frame):
         # 下拉框区域
         self.label_ic = tk.Label(self, text="IC型号:", anchor="e")
         self.label_ic.place(x=0, y=50, width=60)
-        self.ic_values = ["ALL", '7272', '7202H', '7202M', '7302']
-        self.ic_dropdown = ttk.Combobox(self, values=self.ic_values, state="readonly")
+        # self.ic_values = ["ALL", '7272', '7202H', '7202M', '7302']
+        self.ic_values = ['ALL']
+        # self.ic_dropdown = ttk.Combobox(self, values=self.ic_values, state="readonly")
+        self.ic_dropdown = EditableCombobox(self, category='IC', values=self.ic_values)
         self.ic_dropdown.current(0)
         self.ic_dropdown.place(x=60 * multiple, y=50, width=80)
 
         self.label_module = tk.Label(self, text="模组厂:", anchor="e")
         self.label_module.place(x=150 * multiple, y=50, width=60)
-        self.module_values = ['ALL', '海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙', '合力泰', '华显', '维立',
-                              '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
-                              '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
-                              '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
-                              '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威', '天正达',
-                              '凯晟', '天山']
-        self.module_dropdown = ttk.Combobox(self, values=self.module_values, state="readonly")
+        # self.module_values = ['ALL', '海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙', '合力泰', '华显', '维立',
+        #                       '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
+        #                       '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
+        #                       '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
+        #                       '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威', '天正达',
+        #                       '凯晟', '天山']
+        self.module_values = ['ALL']
+        # self.module_dropdown = ttk.Combobox(self, values=self.module_values, state="readonly")
+        self.module_dropdown = EditableCombobox(self, category='Module', values=self.module_values)
         self.module_dropdown.current(0)
         self.module_dropdown.place(x=210 * multiple, y=50, width=80)
 
         self.label_glass = tk.Label(self, text="玻璃厂:", anchor="e")
         self.label_glass.place(x=300 * multiple, y=50, width=60)
-        self.glass_values = ['ALL', 'CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA', 'SHARP', 'MDT', 'HKC', 'HSD', 'INX',
-                             'IVO', 'CTC']
-        self.glass_dropdown = ttk.Combobox(self, values=self.glass_values, state="readonly")
+        # self.glass_values = ['ALL', 'CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA', 'SHARP', 'MDT', 'HKC', 'HSD', 'INX',
+        #                      'IVO', 'CTC']
+        self.glass_values = ['ALL']
+        # self.glass_dropdown = ttk.Combobox(self, values=self.glass_values, state="readonly")
+        self.glass_dropdown = EditableCombobox(self, category='Glass', values=self.glass_values)
         self.glass_dropdown.current(0)
         self.glass_dropdown.place(x=360 * multiple, y=50, width=80)
 
@@ -473,15 +674,18 @@ class MPAnalysis(tk.Frame):
 
         self.label_year = tk.Label(self, text="年度:", anchor="e")
         self.label_year.place(x=150 * multiple, y=80, width=60)
-        self.year_values = ['ALL', '2022', '2023', '2024', '2025']
-        self.year_dropdown = ttk.Combobox(self, values=self.year_values, state="readonly")
+        # self.year_values = ['ALL', '2022', '2023', '2024', '2025']
+        self.year_values = ['ALL']
+        # self.year_dropdown = ttk.Combobox(self, values=self.year_values, state="readonly")
+        self.year_dropdown = EditableCombobox(self, category='Year', values=self.year_values)
         self.year_dropdown.current(0)
         self.year_dropdown.place(x=210 * multiple, y=80, width=80)
 
         self.label_grade = tk.Label(self, text="等级:", anchor="e")
         self.label_grade.place(x=300 * multiple, y=80, width=60)
-        self.grade_values = ['ALL', 'v', 'A', 'G', '-', 'NULL']
-        self.grade_dropdown = ttk.Combobox(self, values=self.grade_values, state="readonly")
+        self.grade_values = ['ALL', 'NULL']
+        # self.grade_dropdown = ttk.Combobox(self, values=self.grade_values, state="readonly")
+        self.grade_dropdown = EditableCombobox(self, category='Grade', values=self.grade_values)
         self.grade_dropdown.current(0)
         self.grade_dropdown.place(x=360 * multiple, y=80, width=80)
 
@@ -495,6 +699,9 @@ class MPAnalysis(tk.Frame):
         # self.page_label.place_forget()
         # self.btn_prev.place_forget()
         # self.btn_next.place_forget()
+
+        # self.edit_tip = tk.Label(self, text="右键点击下拉框可添加新选项", fg="gray")
+        # self.edit_tip.place(x=10, y=110)
 
     def analyse_open_file(self):
         """
@@ -524,6 +731,23 @@ class MPAnalysis(tk.Frame):
         """
         try:
             self.df1 = read_excel_for_analyse(self.file_path_analyse, sheet_name='MP Project List（internal）')
+            # # 读取对比文件
+            # valid_data_file = 'compare_information.xlsx'
+            # try:
+            #     valid_data = read_compare_excel(valid_data_file, sheet_names='Sheet2')
+            #     if valid_data is not None and not valid_data.empty:
+            #         TARGET_ICS = valid_data.iloc[:, 0].dropna().astype(str).tolist()
+            #         FACTORIES = valid_data.iloc[:, 1].dropna().tolist()
+            #         GLASS_TYPES = valid_data.iloc[:, 2].dropna().tolist()
+            #         YEARS = valid_data.iloc[:, 3].dropna().tolist()
+            #         GRADES = valid_data.iloc[:, 4].dropna().tolist()
+            #         GRADES.append('NULL')
+            #         KS_TYPES = valid_data.iloc[:, 5].dropna().tolist()
+            #         PRINCIPAL = valid_data.iloc[:, 6].dropna().tolist()
+            #     else:
+            #         messagebox.showwarning("警告", "对比文件为空或无效")
+            # except Exception as e:
+            #     messagebox.showerror("错误", f"读取对比文件失败: {e}")
         except Exception as e:
             self.df1 = None
             messagebox.showerror("错误", f"读取Excel文件失败: {e}")
@@ -623,7 +847,6 @@ class MPAnalysis(tk.Frame):
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state=tk.DISABLED)
 
-
     def draw_histogram(self, choose, title, counts):
         """
         绘制直方图
@@ -704,6 +927,7 @@ class MPAnalysis(tk.Frame):
                     project_counts = dist_stats.iloc[:, 0]  # 如果只有一列，使用第一列  传入的空Series
 
                 if len(project_counts) != 0:
+                    plt.close('all')
                     fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
                     f_plot = fig.add_subplot(111)  # 划分区域
                     self.canvas = FigureCanvasTkAgg(fig, master=self)
@@ -858,7 +1082,7 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
 
                 title_conditions, grade_counts = statistic_project_by_grade(self.df1, ic_type, factory, glass, flash,
-                                                                          year)
+                                                                            year)
                 self.draw_histogram(choose, title_conditions, grade_counts)
 
             # # 设置网格线
@@ -1059,38 +1283,46 @@ class KSAnalysis(tk.Frame):
         # 下拉框区域
         self.label_ic_KS = tk.Label(self, text="IC型号:", anchor="e")
         self.label_ic_KS.place(x=5 * multiple, y=50, width=50)
-        self.ic_values_KS = ["ALL", '7272', '7202H', '7202M']
-        self.ic_dropdownKS = ttk.Combobox(self, values=self.ic_values_KS, state="readonly")
-        self.ic_dropdownKS.config(state=tk.DISABLED)
+        # self.ic_values_KS = ["ALL", '7272', '7202H', '7202M']
+        self.ic_values_KS = ['ALL']
+        # self.ic_dropdownKS = ttk.Combobox(self, values=self.ic_values_KS, state="readonly")
+        self.ic_dropdownKS = EditableCombobox(self, category='IC', values=self.ic_values_KS)
+        # self.ic_dropdownKS.config(state=tk.DISABLED)
         self.ic_dropdownKS.current(0)
         self.ic_dropdownKS.place(x=45 * multiple, y=50, width=70)
 
         self.label_module_KS = tk.Label(self, text="模组厂:", anchor="e")
         self.label_module_KS.place(x=125 * multiple, y=50, width=50)
-        self.module_values_KS = ['ALL', '海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙', '合力泰', '华显',
-                                 '维立',
-                                 '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
-                                 '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
-                                 '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
-                                 '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威',
-                                 '天正达', '凯晟', '天山']
-        self.module_dropdownKS = ttk.Combobox(self, values=self.module_values_KS, state="readonly")
+        # self.module_values_KS = ['ALL', '海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙', '合力泰', '华显',
+        #                          '维立',
+        #                          '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
+        #                          '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
+        #                          '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
+        #                          '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威',
+        #                          '天正达', '凯晟', '天山']
+        self.module_values_KS = ['ALL']
+        # self.module_dropdownKS = ttk.Combobox(self, values=self.module_values_KS, state="readonly")
+        self.module_dropdownKS = EditableCombobox(self, category='Module', values=self.module_values_KS)
         self.module_dropdownKS.current(0)
         self.module_dropdownKS.place(x=165 * multiple, y=50, width=70)
 
         self.label_glass_KS = tk.Label(self, text="玻璃厂:", anchor="e")
         self.label_glass_KS.place(x=245 * multiple, y=50, width=50)
-        self.glass_values_KS = ['ALL', 'CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA', 'SHARP', 'MDT', 'HKC', 'HSD',
-                                'INX',
-                                'IVO', 'CTC']
-        self.glass_dropdownKS = ttk.Combobox(self, values=self.glass_values_KS, state="readonly")
+        # self.glass_values_KS = ['ALL', 'CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA', 'SHARP', 'MDT', 'HKC', 'HSD',
+        #                         'INX',
+        #                         'IVO', 'CTC']
+        self.glass_values_KS = ['ALL']
+        # self.glass_dropdownKS = ttk.Combobox(self, values=self.glass_values_KS, state="readonly")
+        self.glass_dropdownKS = EditableCombobox(self, category='Glass', values=self.glass_values_KS)
         self.glass_dropdownKS.current(0)
         self.glass_dropdownKS.place(x=285 * multiple, y=50, width=70)
 
         self.label_year_KS = tk.Label(self, text="年度:", anchor="e")
         self.label_year_KS.place(x=350 * multiple, y=50, width=50)
-        self.year_values_KS = ['ALL', '2022', '2023', '2024', '2025']
-        self.year_dropdownKS = ttk.Combobox(self, values=self.year_values_KS, state="readonly")
+        # self.year_values_KS = ['ALL', '2022', '2023', '2024', '2025']
+        self.year_values_KS = ['ALL']
+        # self.year_dropdownKS = ttk.Combobox(self, values=self.year_values_KS, state="readonly")
+        self.year_dropdownKS = EditableCombobox(self, category='Year', values=self.year_values_KS)
         self.year_dropdownKS.current(0)
         self.year_dropdownKS.place(x=390 * multiple, y=50, width=70)
 
@@ -1110,15 +1342,19 @@ class KSAnalysis(tk.Frame):
 
         self.label_type_KS = tk.Label(self, text="客诉类型:", anchor="e")
         self.label_type_KS.place(x=235 * multiple, y=80, width=60)
-        self.type_values_KS = ['ALL', '误判', 'DPcode', 'FW效果', 'IC来料', '环境干扰', '模组工艺', '人为因素', '玻璃']
-        self.type_dropdownKS = ttk.Combobox(self, values=self.type_values_KS, state="readonly")
+        # self.type_values_KS = ['ALL', '误判', 'DPcode', 'FW效果', 'IC来料', '环境干扰', '模组工艺', '人为因素', '玻璃']
+        self.type_values_KS = ['ALL']
+        # self.type_dropdownKS = ttk.Combobox(self, values=self.type_values_KS, state="readonly")
+        self.type_dropdownKS = EditableCombobox(self, category='Type', values=self.type_values_KS)
         self.type_dropdownKS.current(0)
         self.type_dropdownKS.place(x=285 * multiple, y=80, width=70)
 
         self.label_principal_KS = tk.Label(self, text="负责人:", anchor="e")
         self.label_principal_KS.place(x=350 * multiple, y=80, width=50)
-        self.principal_values_KS = ['ALL', '黄耀', '吴宏博', '丁淑芳', '成鹏', '李尚聪', '卓秀慧']
-        self.principal_dropdownKS = ttk.Combobox(self, values=self.principal_values_KS, state="readonly")
+        # self.principal_values_KS = ['ALL', '黄耀', '吴宏博', '丁淑芳', '成鹏', '李尚聪', '卓秀慧']
+        self.principal_values_KS = ['ALL']
+        # self.principal_dropdownKS = ttk.Combobox(self, values=self.principal_values_KS, state="readonly")
+        self.principal_dropdownKS = EditableCombobox(self, category='Principal', values=self.principal_values_KS)
         self.principal_dropdownKS.current(0)
         self.principal_dropdownKS.place(x=390 * multiple, y=80, width=70)
 
@@ -1299,7 +1535,6 @@ class KSAnalysis(tk.Frame):
             self.over_dropdownKS.config(state="readonly")
             self.type_dropdownKS.config(state="readonly")
             # self.principal_dropdownKS.config(state="readonly")
-
 
     def draw_histogram_KS(self, choose, title, counts):
         """
@@ -1487,7 +1722,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v4.2_20250509")
+        self.root.title("MP List Check Tool_v4.4_20250731")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 

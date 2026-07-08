@@ -20,18 +20,21 @@ def check_sequence(df):
     """
     errors = []
     cleaned_project_numbers = df.iloc[:, 2]
+    glass = df.iloc[:,7]
+
+    only_name = cleaned_project_numbers.astype(str) + '_' +glass.astype(str) + '_' + df.iloc[:,5].astype(str)
     # 初始化序号
     expected_sequence = 1
 
-    for idx, (project_number, sequence) in enumerate(zip(cleaned_project_numbers, df.iloc[:, 0])):
+    for idx, (project_number, sequence) in enumerate(zip(only_name, df.iloc[:, 0])):
         if pd.isna(sequence) or sequence == '' or sequence == 0:
             errors.append((idx + 2, '序号', "序号为空值"))
-            if idx > 0 and project_number != cleaned_project_numbers[idx - 1]:
+            if idx > 0 and project_number != only_name[idx - 1]:
                 expected_sequence += 1
             continue
 
         # 如果当前项目号与前一个项目号不同，则序号应递增
-        if idx > 0 and project_number != cleaned_project_numbers[idx - 1]:
+        if idx > 0 and project_number != only_name[idx - 1]:
             expected_sequence += 1
 
         # 检查序号是否正确，确保将sequence转换为整数
@@ -55,7 +58,7 @@ def check_sequence_for_fix(df):
     :return: 错误值列表，每个错误值为 (行号, 列名, 错误信息)
     """
     errors = []
-    cleaned_project_numbers = df.iloc[:, 2]
+    cleaned_project_numbers = df.iloc[:, 2].astype(str) + '_' +df.iloc[:, 7].astype(str) + '_' + df.iloc[:,5].astype(str)
     expected_sequence = 1  # 初始化期望的序号
 
     # 用于存储上一个错误信息和项目号
@@ -302,21 +305,19 @@ def check_same_project(df):
     :return:
     '''
     errors = []
-    project_column = df.iloc[:, 2]  # C列 - 项目号
-    sequence_column = df.iloc[:, 0]  # A列 - 序号
+    project_column = df.iloc[:, 2].str.upper()  #项目号
+    sequence_column = df.iloc[:, 0]  # 序号
 
-    # 创建一个字典来跟踪每个项目号的出现情况
-    # 格式: {项目号: (首次出现的行号, 首次出现的序号)}
     project_dict = {}
 
     for idx, (project, seq) in enumerate(zip(project_column, sequence_column)):
-        row_num = idx + 2  # Excel行号从2开始
+        row_num = idx + 2
 
         # 跳过空值或无效项目号的行
         if pd.isna(project) or project == '':
             continue
 
-        # 跳过空序号的行（如果需要）
+        # 跳过空序号的行
         if pd.isna(seq) or seq == '':
             continue
 
