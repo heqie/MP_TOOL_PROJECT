@@ -263,6 +263,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     # 按唯一ID去重后统计
     ic_counts = filtered_df.drop_duplicates('Unique_ID')['Matched_IC'].value_counts()
     ic_counts = ic_counts.reindex(TARGET_ICS, fill_value=0)
+    ic_counts = ic_counts[ic_counts > 0]
 
     # 打印筛选条件
     print("▌ 筛选条件：")
@@ -537,6 +538,8 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     # 统计年度分布
     year_counts = unique_projects['Year'].value_counts()
     year_counts = year_counts.reindex(YEARS, fill_value=0)
+    year_counts = year_counts[year_counts > 0]
+
     # print(year_counts)
     # 打印筛选条件
     print("▌ 筛选条件：")
@@ -610,6 +613,8 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
     # 统计年度分布
     grade_counts = unique_projects['Grade'].value_counts()
     grade_counts = grade_counts.reindex(GRADES, fill_value=0)
+    grade_counts = grade_counts[grade_counts > 0]
+
     # print(year_counts)
     # 打印筛选条件
     print("▌ 筛选条件：")

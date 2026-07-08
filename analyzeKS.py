@@ -164,6 +164,7 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
     # 按唯一ID去重后统计
     ic_counts = filtered_df.drop_duplicates('Unique_ID')['Matched_IC'].value_counts()
     ic_counts = ic_counts.reindex(TARGET_ICS, fill_value=0)
+    ic_counts = ic_counts[ic_counts > 0]
 
     # 打印筛选条件
     print("▌ 筛选条件：")
@@ -374,6 +375,7 @@ def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', 
     # 统计年度分布
     year_counts = unique_projects['Year'].value_counts()
     year_counts = year_counts.reindex(YEARS, fill_value=0)
+    year_counts = year_counts[year_counts > 0]
     # print(year_counts)
     # 打印筛选条件
     print("▌ 筛选条件：")
@@ -584,8 +586,8 @@ def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     # 统计年度分布
     type_counts = unique_projects['Type'].value_counts()
     type_counts = type_counts.reindex(KS_TYPES, fill_value=0)
-
-    type_counts = type_counts.sort_values(ascending=False)
+    type_counts = type_counts[type_counts > 0].sort_values(ascending=False)
+    # type_counts = type_counts.sort_values(ascending=False)
 
     # 打印筛选条件
     print("▌ 筛选条件：")
@@ -656,8 +658,8 @@ def statistic_project_principal_KS(df, factory='ALL', ic_type='ALL', glass='ALL'
     # 统计年度分布
     principal_counts = unique_projects['Principal'].value_counts()
     principal_counts = principal_counts.reindex(PRINCIPAL, fill_value=0)
-
-    principal_counts = principal_counts.sort_values(ascending=False)
+    principal_counts = principal_counts[principal_counts > 0].sort_values(ascending=False)
+    # principal_counts = principal_counts.sort_values(ascending=False)
 
     # 打印筛选条件
     print("▌ 筛选条件：")

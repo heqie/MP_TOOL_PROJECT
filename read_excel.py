@@ -10,6 +10,44 @@ import pandas as pd
 from tkinter import messagebox
 import re
 
+def remove_parentheses(text):
+    """
+     删除字符串中的括号及其里面的字符
+    :param text:
+    :return:
+    """
+    # 英文括号模式
+    english_pattern = r"\([^()]*\)"
+    # 中文括号模式
+    chinese_pattern = r"（[^（）]*）"
+
+    # 先处理中文括号
+    text = re.sub(chinese_pattern, "", text)
+    # 再处理英文括号
+    text = re.sub(english_pattern, "", text)
+    return text
+
+
+def remove_after_underscore(text):
+    """
+    删除字符串中的"_"及其之后的字符
+    :param text:
+    :return:
+    """
+    # 匹配下划线及其后的所有字符
+    pattern = r"_.*"
+    result = re.sub(pattern, "", text)
+    return result
+
+
+def convert_to_uppercase(text):
+    """
+    将字符串全部转化为大写
+    :param text:
+    :return:
+    """
+    return text.upper()
+
 
 def read_excel_with_merged_cells(file_path, sheet_name):
     """
@@ -132,6 +170,7 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                 df.iloc[:, 8] = df.iloc[:, 8].ffill()
                 df.iloc[:, 9] = df.iloc[:, 9].ffill()
                 df.iloc[:, 10] = df.iloc[:, 10].ffill()
+
 
                 # 将空字符串（excel单元格为文本类型）单元格数据替换为0
                 df = df.replace('', '0')
@@ -274,12 +313,6 @@ def read_excel_for_analyse(file_path, sheet_name):
     except Exception as e:
         print(f"读取Excel文件失败: {e}")
         return None
-
-
-def remove_parentheses(text):
-    pattern = r"\([^()]*\)"
-    text = re.sub(pattern, "", text)
-    return text
 
 
 def read_excel_for_analyseKS(file_path, sheet_name):

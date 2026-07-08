@@ -1047,7 +1047,7 @@ class MPAnalysis(tk.Frame):
                     elif self.total_pages == 1:
                         # self.clear_plot()
                         # 绘制图表
-                        fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+                        fig = plt.figure(figsize=(7.1, 5.1), dpi=100)
                         f_plot = fig.add_subplot(111)  # 划分区域
                         self.canvas = FigureCanvasTkAgg(fig, master=self)
                         self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
@@ -1166,7 +1166,7 @@ class MPAnalysis(tk.Frame):
 
         # 创建图形和坐标轴(如果不存在)
         if self.fig is None:
-            self.fig = plt.figure(figsize=(7.2, 4.8), dpi=100)
+            self.fig = plt.figure(figsize=(7.1, 4.8), dpi=100)
             self.ax = self.fig.add_subplot(111)
 
         # 清除之前的画布
@@ -1776,7 +1776,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v4.6_20251226")
+        self.root.title("MP List Check Tool_v5.1_20260104")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 

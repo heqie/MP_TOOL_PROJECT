@@ -162,6 +162,10 @@ def check_glass_model(column, valid_models):
     :param valid_models: 有效玻璃型号的对比
     :return: 错误值
     """
+    # 玻璃去掉括号及其括号内容
+    column = column.apply(lambda x: remove_parentheses(str(x)))
+    column = column.apply(lambda x: remove_after_underscore(str(x)))
+    column = column.apply(lambda x: convert_to_uppercase(str(x)))
     errors = []
     for idx, value in enumerate(column):
         if pd.isna(value) or value == 0:
