@@ -69,6 +69,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         match = re.match(r'^([A-Za-z]+)', str(g))
         return match.group(1).upper() if match else str(g).upper()
 
+    # df_filtered.loc[:, 'Sequence'] = df_filtered.iloc[:, 0].astype(str)
     df_filtered.loc[:, 'Grade'] = df_filtered.iloc[:, 1].astype(str).str.upper()
     df_filtered.loc[:, 'IC_Norm'] = df_filtered.iloc[:, 6].apply(normalize_ic)
     df_filtered.loc[:, 'Factory'] = df_filtered.iloc[:, 5].astype(str)
@@ -83,11 +84,14 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
 
     # 创建唯一项目ID
     df_filtered.loc[:, 'Project_ID'] = (
+            df_filtered.iloc[:, 0].astype(str) + '_' +
             df_filtered.iloc[:, 2].astype(str) + '_' +
             df_filtered.iloc[:, 3].astype(str) + '_' +
             df_filtered.iloc[:, 5].astype(str) + '_' +
             df_filtered.iloc[:, 7].astype(str)
     )
+    # df_filtered['Project_ID'].to_csv('project_ids.txt', index=False, header=False, encoding='utf-8')
+    # print("Project_ID 已保存到 project_ids.txt 文件")
     # print(df_filtered.iloc[:, 3].astype(str))
 
     # 应用筛选条件
@@ -177,10 +181,9 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     return conditions, dist_stats
 
 
-
-def normolization_data( df):
+def normolization_data(df):
     '''
-    规范化excel表客诉记录数据结构
+    规范化excel表MP项目数据结构
     :param df: 二维数组
     :return: 规范后的数据
     '''
@@ -188,6 +191,7 @@ def normolization_data( df):
     df = df.copy()
 
     # 标准化各列数据
+    df['sequence']= df.iloc[:, 0].astype(str)
     df['Grade'] = df.iloc[:, 1].astype(str).str.upper()
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Terminal_Name'] = df.iloc[:, 3].astype(str)  # D列
@@ -206,9 +210,11 @@ def normolization_data( df):
     )
 
     # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df['Unique_ID'] = df['sequence']+ '_' +df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    # df['Unique_ID'].to_csv('project_ids.txt', index=False, header=False, encoding='utf-8')
+    # print("Project_ID 已保存到 project_ids.txt 文件")
 
-    #特殊处理
+    # 特殊处理
     target_id = "HW09_图高_海菲_CSOT6.56"
     df.loc[df['Unique_ID'] == target_id, 'Grade'] = 'G'
 
@@ -245,7 +251,8 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
         df = df[df['Grade'] == grade]
 
     # IC型号匹配（7202M/7202H模糊匹配）
-    pattern = re.compile(r'7272|7202[MH]|7302')
+    # pattern = re.compile(r'7272|7202[MH]|7302')
+    pattern = re.compile(r'7202MA|7272CA|7272|7202[MH]|7302')
     df['Matched_IC'] = df['IC_Type'].apply(
         lambda x: pattern.search(x).group() if pattern.search(x) else None
     )
@@ -614,7 +621,6 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(grade_counts.sum())}）")
     print("─" * 40)
-
 
     # 图表美化
     title_conditions = []

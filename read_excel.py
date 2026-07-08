@@ -40,65 +40,93 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                 df.iloc[:, 2] = df.iloc[:, 2].ffill()
                 # 替换项目号中的特定值
                 cleaned_project_numbers = df.iloc[:, 2]
-
-                # 读取对比文件
-                valid_data_file = 'compare_information.xlsx'
-                try:
-                    valid_data = read_compare_excel(valid_data_file, sheet_names='Sheet1')
-                    if valid_data is not None and not valid_data.empty:
-                        change_before_project = valid_data.iloc[:, 4].dropna().tolist()
-                        change_after_project = valid_data.iloc[:, 5].dropna().tolist()
-                    else:
-                        change_before_project = []
-                        change_after_project = []
-                        messagebox.showwarning("警告", "对比文件为空或无效")
-                except Exception as e:
-                    change_before_project = []
-                    change_after_project = []
-                    messagebox.showerror("错误", f"读取对比文件失败: {e}")
-
-                change_mapping = dict(zip(change_before_project, change_after_project))
-                for idx, project_number in enumerate(cleaned_project_numbers):
-                    if project_number in change_mapping:
-                        cleaned_project_numbers[idx] = change_mapping[project_number]
-                        # print(f"项目号 {project_number} 已替换为 {cleaned_project_numbers[idx]}")
-
+                #
+                # # 读取对比文件
+                # valid_data_file = 'compare_information.xlsx'
+                # try:
+                #     valid_data = read_compare_excel(valid_data_file, sheet_names='Sheet1')
+                #     if valid_data is not None and not valid_data.empty:
+                #         change_before_project = valid_data.iloc[:, 4].dropna().tolist()
+                #         change_after_project = valid_data.iloc[:, 5].dropna().tolist()
+                #     else:
+                #         change_before_project = []
+                #         change_after_project = []
+                #         messagebox.showwarning("警告", "对比文件为空或无效")
+                # except Exception as e:
+                #     change_before_project = []
+                #     change_after_project = []
+                #     messagebox.showerror("错误", f"读取对比文件失败: {e}")
+                #
+                # change_mapping = dict(zip(change_before_project, change_after_project))
+                # for idx, project_number in enumerate(cleaned_project_numbers):
+                #     if project_number in change_mapping:
+                #         cleaned_project_numbers[idx] = change_mapping[project_number]
+                #         # print(f"项目号 {project_number} 已替换为 {cleaned_project_numbers[idx]}")
+                # cleaned_project_numbers = cleaned_project_numbers
                 # 合并的单元格为空则左上角填入0
                 replace_num = int(0)
+                cleaned_squence = df.iloc[:, 0].fillna('')
                 # 序号
                 for idx, (project_number, sequence) in enumerate(
                         zip(cleaned_project_numbers, df.iloc[:, 0].fillna(''))):
-                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1]:
+                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
                         df.iloc[idx, 0] = replace_num
+
+                # 终端
+                for idx, (project_number, sequence) in enumerate(
+                        zip(cleaned_project_numbers, df.iloc[:, 3].fillna(''))):
+                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
+                        df.iloc[idx, 3] = replace_num
 
                 # ic
                 for idx, (project_number, sequence) in enumerate(
                         zip(cleaned_project_numbers, df.iloc[:, 6].fillna(''))):
-                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1]:
+                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
                         df.iloc[idx, 6] = replace_num
 
                 # 玻璃
                 for idx, (project_number, sequence) in enumerate(
                         zip(cleaned_project_numbers, df.iloc[:, 7].fillna(''))):
-                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1]:
+                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
                         df.iloc[idx, 7] = replace_num
 
                 # 接口
                 for idx, (project_number, sequence) in enumerate(
                         zip(cleaned_project_numbers, df.iloc[:, 8].fillna(''))):
-                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1]:
+                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
                         df.iloc[idx, 8] = replace_num
 
                 # flash
                 for idx, (project_number, sequence) in enumerate(
                         zip(cleaned_project_numbers, df.iloc[:, 9].fillna(''))):
-                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1]:
+                    if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
                         df.iloc[idx, 9] = replace_num
 
                 # 向下填充NAN值
                 df.iloc[:, 0] = df.iloc[:, 0].ffill()
                 df.iloc[:, 2] = df.iloc[:, 2].ffill()
+                df.iloc[:, 3] = df.iloc[:, 3].ffill()
                 df.iloc[:, 5] = df.iloc[:, 5].ffill()
+                df.replace({
+                    '汉龙': '汉龙时代',
+                    '汉龙时代光电': '汉龙时代',
+                    '轩达百业': '轩达',
+                    '轩达(百业代工）': '轩达',
+                    '轩达（星星科技代工）': '轩达',
+                    '惠科(华锐代)': '惠科',
+                    '重庆联创': '联创',
+                    '两江联创': '联创',
+                    '万年联创': '联创',
+                    '万联': '联创',
+                    '重联': '联创',
+                    '大通': '大通显示',
+                    '菲触': '菲触显视',
+                    '宏利': '宏利超显',
+                    '瑞恒': '瑞恒光电',
+                    '湖南金宏光电': '金宏光电',
+                    '新显': '长信新显',
+                    '天山': '天山电子',
+                }, inplace=True)
                 df.iloc[:, 6] = df.iloc[:, 6].ffill()
                 df.iloc[:, 7] = df.iloc[:, 7].ffill()
                 df.iloc[:, 8] = df.iloc[:, 8].ffill()
@@ -109,6 +137,10 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                 df = df.replace('', '0')
                 # # 填充非文本类型单元格数据为0
                 df = df.fillna(0)
+
+                #debug处理后的文件
+                # save_path = "processed_data.xlsx"
+                # df.to_excel(save_path, index=False, sheet_name=sheet_name)
 
         return df
     except Exception as e:
@@ -179,6 +211,15 @@ def read_excel_for_analyse(file_path, sheet_name):
 
                 # df.iloc[:, 1].astype(str).str.upper()
                 df.iloc[:, 2] = df.iloc[:, 2].ffill()
+                # # 替换项目号中的特定值
+                # replace_num = int(0)
+                # cleaned_squence = df.iloc[:, 0].fillna('')
+                # cleaned_project_numbers = df.iloc[:, 2]
+                # for idx, (project_number, sequence) in enumerate(
+                #         zip(cleaned_project_numbers, df.iloc[:, 3].fillna(''))):
+                #     if (pd.isna(sequence) or sequence == '') and project_number != cleaned_project_numbers[idx - 1] and sequence != cleaned_squence[idx - 1]:
+                #         df.iloc[idx, 3] = replace_num
+                df.iloc[:, 0] = df.iloc[:,0].ffill()
                 #终端
                 df.iloc[:, 3] = df.iloc[:, 3].ffill()
                 # 模组厂
@@ -287,6 +328,9 @@ def read_excel_for_analyseKS(file_path, sheet_name):
                     'IC来料、玻璃': '玻璃',
                     '万联': '联创',
                     '重联': '联创',
+                    # '误判(Tool+MP Bin)' :'误判',
+                    # '误判(Tool)':'误判',
+                    # '误判(MP Bin)':'误判'
                 }, inplace=True)
 
                 # 删除字符串中的空格和换行符

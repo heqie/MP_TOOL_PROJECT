@@ -243,6 +243,7 @@ class CheckFrame(tk.Frame):
         self.checks_visible = False  # 用于跟踪功能按钮的显示状态
         self.create_widgets()
         self.sequence_error = None
+        self.position_error = None
 
     def create_widgets(self):
         """
@@ -319,6 +320,8 @@ class CheckFrame(tk.Frame):
         self.btn_project_name = tk.Button(self, text="项目号是否重复检查", height=1, width=15,
                                           command=lambda: self.run_check("项目号是否重复检查",
                                                                          lambda: check_same_project(self.df)))
+        self.btn_project_revise = tk.Button(self, text="项目号位置校正", height=1, width=15,
+                                            command=lambda: self.move_same_projects_position(self.position_error))
 
         # 结果显示区域
         self.result_area = scrolledtext.ScrolledText(self)
@@ -400,6 +403,7 @@ class CheckFrame(tk.Frame):
             self.btn_tool_version.place_forget()
             self.btn_date_format.place_forget()
             self.btn_project_name.place_forget()
+            self.btn_project_revise.place_forget()
             self.checks_visible = False
         else:
             # 显示功能按钮
@@ -413,6 +417,8 @@ class CheckFrame(tk.Frame):
             self.btn_tool_version.place(x=120 * multiple, y=130)
             self.btn_date_format.place(x=230 * multiple, y=130)
             self.btn_project_name.place(x=340 * multiple, y=130)
+            self.btn_project_revise.place(x=450 * multiple, y=130)
+            self.btn_project_revise.config(state=tk.DISABLED)
             self.checks_visible = True
 
     def run_check_all(self):
@@ -444,6 +450,8 @@ class CheckFrame(tk.Frame):
                 self.result_area.insert(tk.END, "  PASS\n", "green")
                 if check_name == "序列检查":
                     self.btn_sequence_revise.config(state=tk.DISABLED)
+                if check_name == '项目号是否重复检查':
+                    self.btn_project_revise.config(state=tk.DISABLED)
             else:
                 self.result_area.insert(tk.END, "FAIL:\n", "red")
                 self.result_area.insert(tk.END, "错误位置:\n", "red")
@@ -457,6 +465,11 @@ class CheckFrame(tk.Frame):
                 if check_name == "序列检查":
                     self.btn_sequence_revise.config(state=tk.NORMAL)
                     self.sequence_error = check_sequence_for_fix(self.df)
+
+                # 项目号检查有问题启用项目号位置校正
+                if check_name == '项目号是否重复检查':
+                    self.btn_project_revise.config(state=tk.NORMAL)
+                    self.position_error = check_same_project(self.df)
 
             self.result_area.insert(tk.END, "\n")
 
@@ -482,12 +495,14 @@ class CheckFrame(tk.Frame):
             self.result_area.insert(tk.END, "  PASS\n", "green")
             if check_name == "序列检查":
                 self.btn_sequence_revise.config(state=tk.DISABLED)
+            if check_name == '项目号是否重复检查':
+                self.btn_project_revise.config(state=tk.DISABLED)
         else:
             self.result_area.insert(tk.END, "FAIL:\n", "red")
             self.result_area.insert(tk.END, "错误位置:\n", "red")
             for error in errors:
                 if check_name == "项目号是否重复检查":
-                    self.result_area.insert(tk.END, f"项目号‘{error[3]}’,重复位置: 行 {error[0]} 和行 {error[1]} \n", "red")
+                    self.result_area.insert(tk.END, f"项目号‘{error[3]}’,重复位置: 行 {error[0]}和行 {error[1]} \n", "red")
                 else:
                     self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
 
@@ -495,6 +510,11 @@ class CheckFrame(tk.Frame):
             if check_name == "序列检查":
                 self.btn_sequence_revise.config(state=tk.NORMAL)
                 self.sequence_error = check_sequence_for_fix(self.df)
+
+            # 项目号检查有问题启用项目号位置校正
+            if check_name == '项目号是否重复检查':
+                self.btn_project_revise.config(state=tk.NORMAL)
+                self.position_error = check_same_project(self.df)
 
         self.result_area.insert(tk.END, "\n")
 
@@ -511,6 +531,40 @@ class CheckFrame(tk.Frame):
             messagebox.showinfo("success", "序列已校正并保存到modified_excel_file.xlsx！")
         except Exception as e:
             messagebox.showerror("fail!", f"校正序列失败{e}")
+
+    def move_same_projects_position(self, errors):
+        """
+        :param errors:
+        :return:
+        """
+        try:
+            result_path, merge_ranges=cut_and_paste_excel(self.file_path, errors)
+            file_path_moved_position = "cut_paste_result.xlsx"
+            try:
+                result_file = merge_and_center_cells(
+                    workbook_path=file_path_moved_position,
+                    sheet_name="MP Project List（internal）",
+                    merge_ranges=merge_ranges,
+                    output_path="excel_style_merged.xlsx"
+                )
+                print("合并完成！")
+            except Exception as e:
+                print(f"合并过程中出错: {e}")
+                messagebox.showerror("fail!", f"项目单元格合并失败{e}")
+
+            file_path_merged ="excel_style_merged.xlsx"
+            try:
+                self.df = read_excel_with_merged_cells(file_path_merged, sheet_name='MP Project List（internal）')
+                self.sequence_error = check_sequence_for_fix(self.df)
+                fix_sequence(file_path_merged, self.sequence_error)
+                os.remove(file_path_moved_position)
+                os.remove(file_path_merged)
+            except Exception as e:
+                messagebox.showerror("fail!", f"项目序号校正失败{e}")
+
+            messagebox.showinfo("success", "项目位置已校正并保存到modified_excel_file.xlsx！！")
+        except Exception as e:
+            messagebox.showerror("fail!", f"校正项目信息位置失败{e}")
 
 
 class AnalyseFrame(tk.Frame):
@@ -648,7 +702,7 @@ class MPAnalysis(tk.Frame):
         #                       '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
         #                       '泰启', '百业', '共赢', '德实', '京龙', '如新电子', '皓显', '大通显示', '高展', '康华显通', '煜鑫', '宏利超显', '菲触显视',
         #                       '轩达', '钜沣', '鹰芒技术', '德普特', '元格', '亿普拉斯', '万联', '重联', '日日佳', '中正威', '天山电子', '中正威', '天正达',
-        #                       '凯晟', '天山']
+        #                       '凯晟', '联信康','美力凯']
         self.module_values = ['ALL']
         # self.module_dropdown = ttk.Combobox(self, values=self.module_values, state="readonly")
         self.module_dropdown = EditableCombobox(self, category='Module', values=self.module_values)
@@ -1722,7 +1776,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v4.4_20250731")
+        self.root.title("MP List Check Tool_v4.5_20251020")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 

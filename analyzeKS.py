@@ -112,7 +112,7 @@ def normolization_dataKS(analyse_type, df):
     df['Type'] = df.iloc[:, 12].astype(str)  # 客诉类型
     df['Principal'] = df.iloc[:, 13].astype(str)  # 负责人
     # 创建唯一项目ID（序号+项目+模组厂+玻璃）
-    df['Unique_ID'] = df['sequence'] + '_' + df['Project_Name'] + '_' + df['Factory'] + '_' + df['Glass_before'] + '_' + \
+    df['Unique_ID'] = df['sequence'] + '_' + df['Project_Name'] + '_' + df['Factory'] + '_' +df['IC_Type']+'_' + df['Glass_before'] + '_' + \
                       df['Date'] + '_' + df['finish_Date']
 
     return df
@@ -153,7 +153,7 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
         df = df[df['Principal'] == principal]
 
     # IC型号匹配（7202M/7202H模糊匹配）
-    pattern = re.compile(r'7272|7202[MH]')
+    pattern = re.compile(r'7202MA|7272CA|7272|7202[MH]|7302')
     df['Matched_IC'] = df['IC_Type'].apply(
         lambda x: pattern.search(x).group() if pattern.search(x) else None
     )
