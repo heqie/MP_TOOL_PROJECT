@@ -917,7 +917,7 @@ class AnalyseFrame(tk.Frame):
 
         if tab_text.strip() == "MP分析":
             if hasattr(self.mp_analysis, 'canvas') and self.mp_analysis.canvas:
-                self.mp_analysis.canvas.get_tk_widget().place(x=0, y=120)
+                self.mp_analysis.canvas.get_tk_widget().place(x=0, y=150)
         elif tab_text.strip() == "客诉分析":
             if hasattr(self.ks_analysis, 'canvas_KS') and self.ks_analysis.canvas_KS:
                 self.ks_analysis.canvas_KS.get_tk_widget().place(x=0, y=120)
@@ -971,7 +971,7 @@ class MPAnalysis(tk.Frame):
         self.btn_analyse = tk.Button(self, text="项目统计", command=self.get_xl_to_analyse, state=tk.DISABLED)
         self.btn_analyse.place(x=465 * multiple, y=15, width=100* multiple)
 
-        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度', '等级', '发布人','ITO']
+        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度','半年度', '等级', '发布人','ITO']
         self.analyse_dropdown = ttk.Combobox(self, values=self.analyse_values, state="readonly")
         self.analyse_dropdown.current(0)
         self.analyse_dropdown.place(x=465 * multiple, y=60, width=100* multiple)
@@ -1019,6 +1019,8 @@ class MPAnalysis(tk.Frame):
         self.flash_dropdown.current(0)
         self.flash_dropdown.place(x=370 * multiple, y=50, width=90)
 
+        # group_frame_year = tk.LabelFrame(self, bd=2, relief="groove", padx=1.5, pady=1.5)
+        # group_frame_year.place(x=43 * multiple, y=75, width=70* multiple, height=68)
         self.label_year = tk.Label(self, text="年度:", anchor="w")
         self.label_year.place(x=20* multiple, y=80, width=50)
         # self.year_values = ['ALL', '2022', '2023', '2024', '2025']
@@ -1027,6 +1029,13 @@ class MPAnalysis(tk.Frame):
         self.year_dropdown = EditableCombobox(self, category='Year', values=self.year_values)
         self.year_dropdown.current(0)
         self.year_dropdown.place(x=45 * multiple, y=80, width=90)
+        self.year_dropdown.bind("<<ComboboxSelected>>", self.choose_status)
+        # 半年度
+        self.half_year_values = ['ALL', '上半年', '下半年']
+        self.half_year_dropdown = ttk.Combobox(self, values=self.half_year_values, state="readonly")
+        self.half_year_dropdown.current(0)
+        self.half_year_dropdown.place(x=45 * multiple, y=110, width=90)
+        self.half_year_dropdown.config(state=tk.DISABLED)
 
         self.label_grade = tk.Label(self, text="等级:", anchor="e")
         self.label_grade.place(x=120 * multiple, y=80, width=50)
@@ -1113,161 +1122,204 @@ class MPAnalysis(tk.Frame):
             self.df1 = None
             messagebox.showerror("错误", f"读取Excel文件失败: {e}")
 
+    # def choose_status(self, event=None):
+    #     choose = self.analyse_dropdown.get()
+    #     year_choose = self.year_dropdown.get()
+    #     if year_choose == 'ALL':
+    #         self.half_year_dropdown.config(state=tk.DISABLED)
+    #     else:
+    #         self.half_year_dropdown.config(state=tk.NORMAL)
+    #         self.half_year_dropdown.config(state="readonly")
+    #
+    #     if choose == 'ALL':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == 'IC型号':
+    #         self.ic_dropdown.config(state=tk.DISABLED)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == '模组厂':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state=tk.DISABLED)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == '玻璃厂':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state=tk.DISABLED)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == 'Flash':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state=tk.DISABLED)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == '年度':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state=tk.DISABLED)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == '等级':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state=tk.DISABLED)
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.publisher_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == '发布人':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.DISABLED)
+    #         self.ITO_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #
+    #     elif choose == 'ITO':
+    #         self.ic_dropdown.config(state=tk.NORMAL)
+    #         self.module_dropdown.config(state=tk.NORMAL)
+    #         self.glass_dropdown.config(state=tk.NORMAL)
+    #         self.flash_dropdown.config(state=tk.NORMAL)
+    #         self.year_dropdown.config(state=tk.NORMAL)
+    #         self.grade_dropdown.config(state=tk.NORMAL)
+    #         self.ic_dropdown.config(state="readonly")
+    #         self.module_dropdown.config(state="readonly")
+    #         self.glass_dropdown.config(state="readonly")
+    #         self.flash_dropdown.config(state="readonly")
+    #         self.year_dropdown.config(state="readonly")
+    #         self.grade_dropdown.config(state="readonly")
+    #         self.publisher_dropdown.config(state=tk.NORMAL)
+    #         self.ITO_dropdown.config(state="readonly")
+    #         self.ITO_dropdown.config(state=tk.DISABLED)
+
     def choose_status(self, event=None):
-        choose = self.analyse_dropdown.get()
-        if choose == 'ALL':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
+        choose = self.analyse_dropdown.get().strip()
+        year_choose = self.year_dropdown.get().strip()
 
-        elif choose == 'IC型号':
-            self.ic_dropdown.config(state=tk.DISABLED)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
+        # 所有需要控制的下拉框
+        all_dropdowns = [
+            self.ic_dropdown, self.module_dropdown, self.glass_dropdown,
+            self.flash_dropdown, self.year_dropdown, self.grade_dropdown,
+            self.publisher_dropdown, self.ITO_dropdown,
+            self.half_year_dropdown
+        ]
 
-        elif choose == '模组厂':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state=tk.DISABLED)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
+        for dd in all_dropdowns:
+            dd.config(state="readonly")
 
-        elif choose == '玻璃厂':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state=tk.DISABLED)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
+        disable_map = {
+            'IC型号': [self.ic_dropdown],
+            '模组厂': [self.module_dropdown],
+            '玻璃厂': [self.glass_dropdown],
+            'Flash': [self.flash_dropdown],
+            '年度': [self.year_dropdown],
+            '等级': [self.grade_dropdown],
+            '发布人': [self.publisher_dropdown],
+            'ITO': [self.ITO_dropdown],
+            '半年度': [self.half_year_dropdown],
+        }
+        if choose in disable_map:
+            for dd in disable_map[choose]:
+                dd.config(state=tk.DISABLED)
 
-        elif choose == 'Flash':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state=tk.DISABLED)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
-
-        elif choose == '年度':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state=tk.DISABLED)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
-
-        elif choose == '等级':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state=tk.DISABLED)
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.publisher_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
-
-        elif choose == '发布人':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.DISABLED)
-            self.ITO_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
-
-        elif choose == 'ITO':
-            self.ic_dropdown.config(state=tk.NORMAL)
-            self.module_dropdown.config(state=tk.NORMAL)
-            self.glass_dropdown.config(state=tk.NORMAL)
-            self.flash_dropdown.config(state=tk.NORMAL)
-            self.year_dropdown.config(state=tk.NORMAL)
-            self.grade_dropdown.config(state=tk.NORMAL)
-            self.ic_dropdown.config(state="readonly")
-            self.module_dropdown.config(state="readonly")
-            self.glass_dropdown.config(state="readonly")
-            self.flash_dropdown.config(state="readonly")
-            self.year_dropdown.config(state="readonly")
-            self.grade_dropdown.config(state="readonly")
-            self.publisher_dropdown.config(state=tk.NORMAL)
-            self.ITO_dropdown.config(state="readonly")
-            self.ITO_dropdown.config(state=tk.DISABLED)
+        if choose != '半年度' and year_choose.upper() == 'ALL':
+            self.half_year_dropdown.config(state=tk.DISABLED)
+        # print(f"choose={choose}, year_choose={year_choose}, half_year_state={self.half_year_dropdown['state']}")
+        if choose == '年度':
+            self.half_year_dropdown.config(state="readonly")
 
     def draw_histogram(self, choose, title, counts):
         """
@@ -1279,10 +1331,10 @@ class MPAnalysis(tk.Frame):
         """
         # 绘制图表
         if int(counts.sum()) != 0:
-            fig = plt.figure(figsize=(6*multiple-0.1, 4.6*multiple-0.05), dpi=100)
+            fig = plt.figure(figsize=(6*multiple-0.1, 4.4*multiple-0.05), dpi=100)
             f_plot = fig.add_subplot(111)  # 划分区域
             self.canvas = FigureCanvasTkAgg(fig, master=self)
-            self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
+            self.canvas.get_tk_widget().place(x=0, y=150)  # 放置位置
             f_plot.clear()  # 刷新
 
             bars = plt.bar(counts.index, counts.values, width=0.6)
@@ -1294,6 +1346,15 @@ class MPAnalysis(tk.Frame):
                          ha='center', va='bottom', fontsize=11, weight='bold')
 
             a_title = choose + "项目数量统计"
+            if choose =='半年度':
+                year_choose = self.year_dropdown.get().strip()
+                if year_choose != 'ALL':
+                    a_title = year_choose+a_title
+            elif choose =='年度':
+                half_year_choose = self.half_year_dropdown.get().strip()
+                if half_year_choose != 'ALL':
+                    a_title = half_year_choose+a_title
+
             if title:
                 a_title += "\n(" + " | ".join(title) + ")"
 
@@ -1338,8 +1399,9 @@ class MPAnalysis(tk.Frame):
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year, grade,publisher,ITO)
+                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year,half_year, grade,publisher,ITO)
 
                 # 检查DataFrame是否为空
                 if dist_stats.empty or len(dist_stats) == 0:
@@ -1352,10 +1414,10 @@ class MPAnalysis(tk.Frame):
 
                 if len(project_counts) != 0:
                     plt.close('all')
-                    fig = plt.figure(figsize=(6*multiple-0.1, 4.6*multiple-0.05), dpi=100)
+                    fig = plt.figure(figsize=(6*multiple-0.1, 4.4*multiple-0.05), dpi=100)
                     f_plot = fig.add_subplot(111)  # 划分区域
                     self.canvas = FigureCanvasTkAgg(fig, master=self)
-                    self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
+                    self.canvas.get_tk_widget().place(x=0, y=150)  # 放置位置
                     f_plot.clear()  # 刷新
                     ax = sns.barplot(
                         x='Update_Count',
@@ -1398,8 +1460,9 @@ class MPAnalysis(tk.Frame):
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year, grade,publisher,ITO)
+                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year,half_year, grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, ic_counts)
 
             elif choose == '模组厂':
@@ -1410,8 +1473,9 @@ class MPAnalysis(tk.Frame):
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year,
+                title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year,half_year,
                                                                             grade,publisher,ITO)
                 self.module_data = factory_counts  # 保存模组厂数据
                 if int(factory_counts.sum()) > 0:
@@ -1422,10 +1486,10 @@ class MPAnalysis(tk.Frame):
                     elif self.total_pages == 1:
                         # self.clear_plot()
                         # 绘制图表
-                        fig = plt.figure(figsize=(6*multiple-0.1, 4.6*multiple-0.05), dpi=100)
+                        fig = plt.figure(figsize=(6*multiple-0.1, 4.4*multiple-0.05), dpi=100)
                         f_plot = fig.add_subplot(111)  # 划分区域
                         self.canvas = FigureCanvasTkAgg(fig, master=self)
-                        self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
+                        self.canvas.get_tk_widget().place(x=0, y=150)  # 放置位置
                         f_plot.clear()  # 刷新
                         bars = plt.barh(factory_counts.index, factory_counts.values)
 
@@ -1477,8 +1541,9 @@ class MPAnalysis(tk.Frame):
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year,
+                title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year,half_year,
                                                                           grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, glass_counts)
 
@@ -1490,8 +1555,9 @@ class MPAnalysis(tk.Frame):
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year,
+                title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year,half_year,
                                                                           grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, flash_counts)
 
@@ -1504,10 +1570,25 @@ class MPAnalysis(tk.Frame):
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash,
+                title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash,half_year,
                                                                           grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, year_counts)
+
+            elif choose == '半年度':
+                ic_type = self.ic_dropdown.get()
+                factory = self.module_dropdown.get()
+                glass = self.glass_dropdown.get()
+                flash = self.flash_dropdown.get()
+                grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
+                year = self.year_dropdown.get()
+
+                title_conditions, half_year_counts = statistic_project_by_half_year(self.df1, ic_type, factory, glass, flash,year,
+                                                                          grade,publisher,ITO)
+                self.draw_histogram(choose, title_conditions, half_year_counts)
 
             elif choose == '等级':
                 ic_type = self.ic_dropdown.get()
@@ -1517,9 +1598,10 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 publisher = self.publisher_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
                 title_conditions, grade_counts = statistic_project_by_grade(self.df1, ic_type, factory, glass, flash,
-                                                                            year,publisher,ITO)
+                                                                            year,half_year,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, grade_counts)
 
             elif choose == '发布人':
@@ -1530,9 +1612,10 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 ITO = self.ITO_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
                 title_conditions, publisher_counts = statistic_project_by_Publisher(self.df1, ic_type, factory, glass, flash,
-                                                                            year,grade,ITO)
+                                                                            year,half_year,grade,ITO)
                 self.draw_histogram(choose, title_conditions, publisher_counts)
 
             elif choose == 'ITO':
@@ -1543,8 +1626,9 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                half_year = self.half_year_dropdown.get()
 
-                title_conditions, ITO_counts = statistic_ito_projects(self.df1, ic_type, factory, glass, flash,year,
+                title_conditions, ITO_counts = statistic_ito_projects(self.df1, ic_type, factory, glass, flash,year,half_year,
                                                                           grade,publisher)
                 self.draw_histogram(choose, title_conditions, ITO_counts)
 
@@ -1575,7 +1659,7 @@ class MPAnalysis(tk.Frame):
 
         # 创建图形和坐标轴(如果不存在)
         if self.fig is None:
-            self.fig = plt.figure(figsize=(6*multiple-0.1, 4.6*multiple-0.4), dpi=100)
+            self.fig = plt.figure(figsize=(6*multiple-0.1, 4.4*multiple-0.4), dpi=100)
             self.ax = self.fig.add_subplot(111)
 
         # 清除之前的画布
@@ -1583,7 +1667,7 @@ class MPAnalysis(tk.Frame):
             self.clear_plot()
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
-        self.canvas.get_tk_widget().place(x=0, y=120)
+        self.canvas.get_tk_widget().place(x=0, y=150)
         self.ax.clear()
 
         fixed_height = 0.6  # 固定高度值
@@ -2748,7 +2832,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v5.5_20260403")
+        self.root.title("MP List Check Tool_v5.6_20260702")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 
@@ -2794,7 +2878,7 @@ class MainApp:
 
             if current_tab_text.strip() == "MP分析":
                 if hasattr(self.analyse_frame.mp_analysis, 'canvas') and self.analyse_frame.mp_analysis.canvas:
-                    self.analyse_frame.mp_analysis.canvas.get_tk_widget().place(x=0, y=120)
+                    self.analyse_frame.mp_analysis.canvas.get_tk_widget().place(x=0, y=150)
             elif current_tab_text.strip() == "客诉分析":
                 if hasattr(self.analyse_frame.ks_analysis, 'canvas_KS') and self.analyse_frame.ks_analysis.canvas_KS:
                     self.analyse_frame.ks_analysis.canvas_KS.get_tk_widget().place(x=0, y=120)

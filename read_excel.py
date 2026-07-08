@@ -377,6 +377,8 @@ def read_excel_for_analyse(file_path, sheet_name):
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
 
 
+                # df.iloc[:, 5].drop_duplicates().to_csv('模组厂.txt', index=False, header=False, encoding='utf-8')
+
                 # df.to_excel('output.xlsx', index=False)
 
         return df

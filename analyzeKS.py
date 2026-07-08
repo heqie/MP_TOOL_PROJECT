@@ -153,7 +153,7 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
         df = df[df['Principal'] == principal]
 
     # IC型号匹配（7202M/7202H模糊匹配）
-    pattern = re.compile(r'7202MA|7272CA|7272|7202[MH]|7302')
+    pattern = re.compile(r'7274RA|7202MA|7272CA|7272|7202[MH]|7302')
     df['Matched_IC'] = df['IC_Type'].apply(
         lambda x: pattern.search(x).group() if pattern.search(x) else None
     )
