@@ -1028,7 +1028,8 @@ class MPAnalysis(tk.Frame):
                         x='Update_Count',
                         y='Project_Count',
                         data=dist_stats,
-                        linewidth=1
+                        linewidth=1,
+                        # color = '#1f77b4'  # 添加颜色参数
                     )
                     # 添加数据标签
                     for p in ax.patches:
@@ -1831,7 +1832,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v5.2_20260112")
+        self.root.title("MP List Check Tool_v5.3_20260115")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 

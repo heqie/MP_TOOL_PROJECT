@@ -113,11 +113,11 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     if flash != 'ALL':
         df_filtered = df_filtered[df_filtered['Flash'] == flash.upper()]
 
-    if year != 'ALL':
-        df_filtered = df_filtered[df_filtered['Year'] == year]
-        # valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
-        # valid_projects = valid_projects[valid_projects['Year'] == year]['Project_ID']
-        # df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
+    # if year != 'ALL':
+    #     # df_filtered = df_filtered[df_filtered['Year'] == year]
+    #     valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
+    #     valid_projects = valid_projects[valid_projects['Year'] == year]['Project_ID']
+    #     df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
 
     if grade != 'ALL':
         # valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
@@ -129,6 +129,15 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
 
     if publisher != 'ALL':
         df_filtered = df_filtered[df_filtered['Publisher'] == publisher]
+        # if year != 'ALL':
+        #     df_filtered = df_filtered[df_filtered['Year'] == year]
+        if year != 'ALL':
+            df_filtered = df_filtered[df_filtered['Year'] == year]
+    else:
+        if year != 'ALL':
+            valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
+            valid_projects = valid_projects[valid_projects['Year'] == year]['Project_ID']
+            df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
 
     # 统计更新次数（P列）
     df_filtered.loc[:, 'Update_Count'] = df_filtered.iloc[:, 15].astype(str).apply(
