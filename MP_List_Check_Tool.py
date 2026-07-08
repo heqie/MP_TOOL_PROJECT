@@ -59,7 +59,7 @@ class EditableCombobox(ttk.Combobox):
     def _ensure_excel_file(self):
         """确保Excel文件存在"""
         if not os.path.exists('compare_information.xlsx'):
-            df = pd.DataFrame(columns=['IC', 'Module', 'Glass', 'Year', 'Grade', 'Type', 'Principal'])
+            df = pd.DataFrame(columns=['IC', 'Module', 'Glass', 'Year', 'Grade', 'Type', 'Principal','Publisher'])
             df.to_excel('compare_information.xlsx', index=False)
 
     def _load_values_from_excel(self):
@@ -678,7 +678,7 @@ class MPAnalysis(tk.Frame):
         self.btn_analyse = tk.Button(self, text="项目统计", width=15, command=self.get_xl_to_analyse, state=tk.DISABLED)
         self.btn_analyse.place(x=465 * multiple, y=15)
 
-        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度', '等级']
+        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度', '等级', '发布人']
         self.analyse_dropdown = ttk.Combobox(self, values=self.analyse_values, state="readonly")
         self.analyse_dropdown.current(0)
         self.analyse_dropdown.place(x=475 * multiple, y=60, width=100)
@@ -687,16 +687,16 @@ class MPAnalysis(tk.Frame):
 
         # 下拉框区域
         self.label_ic = tk.Label(self, text="IC型号:", anchor="e")
-        self.label_ic.place(x=0, y=50, width=60)
+        self.label_ic.place(x=5 * multiple, y=50, width=50)
         # self.ic_values = ["ALL", '7272', '7202H', '7202M', '7302']
         self.ic_values = ['ALL']
         # self.ic_dropdown = ttk.Combobox(self, values=self.ic_values, state="readonly")
         self.ic_dropdown = EditableCombobox(self, category='IC', values=self.ic_values)
         self.ic_dropdown.current(0)
-        self.ic_dropdown.place(x=60 * multiple, y=50, width=80)
+        self.ic_dropdown.place(x=45 * multiple, y=50, width=70)
 
         self.label_module = tk.Label(self, text="模组厂:", anchor="e")
-        self.label_module.place(x=150 * multiple, y=50, width=60)
+        self.label_module.place(x=125 * multiple, y=50, width=50)
         # self.module_values = ['ALL', '海菲', '信利', '易快来', '联创', '创维', '同兴达', '海盛捷', '壹星', '精卓', '三龙', '合力泰', '华显', '维立',
         #                       '亿华', '立德', '晶泰', '德智欣', '中光电', '沛宏', '欣欣光电', '众铭安', '天正达', '瑞恒光电', '清创高', '汉龙时代',
         #                       '晶胜通', '龙煜', '金宏光电', '威达光电', '惠科', '华视', '正金晶光电', '华映', '长信新显', '宏凯',
@@ -707,41 +707,48 @@ class MPAnalysis(tk.Frame):
         # self.module_dropdown = ttk.Combobox(self, values=self.module_values, state="readonly")
         self.module_dropdown = EditableCombobox(self, category='Module', values=self.module_values)
         self.module_dropdown.current(0)
-        self.module_dropdown.place(x=210 * multiple, y=50, width=80)
+        self.module_dropdown.place(x=165 * multiple, y=50, width=70)
 
         self.label_glass = tk.Label(self, text="玻璃厂:", anchor="e")
-        self.label_glass.place(x=300 * multiple, y=50, width=60)
+        self.label_glass.place(x=245 * multiple, y=50, width=50)
         # self.glass_values = ['ALL', 'CSOT', 'TM', 'TRULY', 'BOE', 'CTO', 'PANDA', 'SHARP', 'MDT', 'HKC', 'HSD', 'INX',
         #                      'IVO', 'CTC']
         self.glass_values = ['ALL']
         # self.glass_dropdown = ttk.Combobox(self, values=self.glass_values, state="readonly")
         self.glass_dropdown = EditableCombobox(self, category='Glass', values=self.glass_values)
         self.glass_dropdown.current(0)
-        self.glass_dropdown.place(x=360 * multiple, y=50, width=80)
+        self.glass_dropdown.place(x=285 * multiple, y=50, width=70)
 
         self.label_flash = tk.Label(self, text="Flash:", anchor="e")
-        self.label_flash.place(x=0, y=80, width=60)
+        self.label_flash.place(x=350 * multiple, y=50, width=50)
         self.flash_values = ['ALL', 'Y', 'N']
         self.flash_dropdown = ttk.Combobox(self, values=self.flash_values, state="readonly")
         self.flash_dropdown.current(0)
-        self.flash_dropdown.place(x=60 * multiple, y=80, width=80)
+        self.flash_dropdown.place(x=390 * multiple, y=50, width=70)
 
-        self.label_year = tk.Label(self, text="年度:", anchor="e")
-        self.label_year.place(x=150 * multiple, y=80, width=60)
+        self.label_year = tk.Label(self, text="年度:", anchor="w")
+        self.label_year.place(x=18* multiple, y=80, width=60)
         # self.year_values = ['ALL', '2022', '2023', '2024', '2025']
         self.year_values = ['ALL']
         # self.year_dropdown = ttk.Combobox(self, values=self.year_values, state="readonly")
         self.year_dropdown = EditableCombobox(self, category='Year', values=self.year_values)
         self.year_dropdown.current(0)
-        self.year_dropdown.place(x=210 * multiple, y=80, width=80)
+        self.year_dropdown.place(x=45 * multiple, y=80, width=70)
 
         self.label_grade = tk.Label(self, text="等级:", anchor="e")
-        self.label_grade.place(x=300 * multiple, y=80, width=60)
+        self.label_grade.place(x=108 * multiple, y=80, width=70)
         self.grade_values = ['ALL', 'NULL']
         # self.grade_dropdown = ttk.Combobox(self, values=self.grade_values, state="readonly")
         self.grade_dropdown = EditableCombobox(self, category='Grade', values=self.grade_values)
         self.grade_dropdown.current(0)
-        self.grade_dropdown.place(x=360 * multiple, y=80, width=80)
+        self.grade_dropdown.place(x=165 * multiple, y=80, width=70)
+
+        self.label_publisher = tk.Label(self, text="发布人:", anchor="e")
+        self.label_publisher.place(x=237 * multiple, y=80, width=60)
+        self.publisher_values = ['ALL']
+        self.publisher_dropdown = EditableCombobox(self, category='Publisher', values=self.publisher_values)
+        self.publisher_dropdown.current(0)
+        self.publisher_dropdown.place(x=285 * multiple, y=80, width=70)
 
         # 模组分页设置
         # 初始化分页控件
@@ -821,6 +828,8 @@ class MPAnalysis(tk.Frame):
             self.flash_dropdown.config(state="readonly")
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
 
         elif choose == 'IC型号':
             self.ic_dropdown.config(state=tk.DISABLED)
@@ -834,6 +843,8 @@ class MPAnalysis(tk.Frame):
             self.flash_dropdown.config(state="readonly")
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
 
         elif choose == '模组厂':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -847,6 +858,8 @@ class MPAnalysis(tk.Frame):
             self.flash_dropdown.config(state="readonly")
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
 
 
         elif choose == '玻璃厂':
@@ -861,6 +874,8 @@ class MPAnalysis(tk.Frame):
             self.flash_dropdown.config(state="readonly")
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
 
         elif choose == 'Flash':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -874,6 +889,8 @@ class MPAnalysis(tk.Frame):
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state=tk.NORMAL)
             self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
 
         elif choose == '年度':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -887,6 +904,8 @@ class MPAnalysis(tk.Frame):
             self.year_dropdown.config(state=tk.DISABLED)
             self.grade_dropdown.config(state=tk.NORMAL)
             self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
 
         elif choose == '等级':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -900,6 +919,23 @@ class MPAnalysis(tk.Frame):
             self.flash_dropdown.config(state="readonly")
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state=tk.DISABLED)
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.publisher_dropdown.config(state="readonly")
+
+        elif choose == '发布人':
+            self.ic_dropdown.config(state=tk.NORMAL)
+            self.module_dropdown.config(state=tk.NORMAL)
+            self.glass_dropdown.config(state=tk.NORMAL)
+            self.flash_dropdown.config(state=tk.NORMAL)
+            self.year_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.DISABLED)
 
     def draw_histogram(self, choose, title, counts):
         """
@@ -968,8 +1004,9 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
-                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year, grade)
+                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year, grade,publisher)
 
                 # 检查DataFrame是否为空
                 if dist_stats.empty or len(dist_stats) == 0:
@@ -1025,8 +1062,9 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
-                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year, grade)
+                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year, grade,publisher)
                 self.draw_histogram(choose, title_conditions, ic_counts)
 
             elif choose == '模组厂':
@@ -1035,9 +1073,10 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
                 title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year,
-                                                                            grade)
+                                                                            grade,publisher)
                 self.module_data = factory_counts  # 保存模组厂数据
                 if int(factory_counts.sum()) > 0:
                     # 计算总页数
@@ -1100,9 +1139,10 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
                 title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year,
-                                                                          grade)
+                                                                          grade,publisher)
                 self.draw_histogram(choose, title_conditions, glass_counts)
 
             elif choose == 'Flash':
@@ -1111,9 +1151,10 @@ class MPAnalysis(tk.Frame):
                 glass = self.glass_dropdown.get()
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
                 title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year,
-                                                                          grade)
+                                                                          grade,publisher)
                 self.draw_histogram(choose, title_conditions, flash_counts)
 
 
@@ -1123,9 +1164,10 @@ class MPAnalysis(tk.Frame):
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
                 grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
                 title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash,
-                                                                          grade)
+                                                                          grade,publisher)
                 self.draw_histogram(choose, title_conditions, year_counts)
 
             elif choose == '等级':
@@ -1134,10 +1176,23 @@ class MPAnalysis(tk.Frame):
                 glass = self.glass_dropdown.get()
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
+                publisher = self.publisher_dropdown.get()
 
                 title_conditions, grade_counts = statistic_project_by_grade(self.df1, ic_type, factory, glass, flash,
-                                                                            year)
+                                                                            year,publisher)
                 self.draw_histogram(choose, title_conditions, grade_counts)
+
+            elif choose == '发布人':
+                ic_type = self.ic_dropdown.get()
+                factory = self.module_dropdown.get()
+                glass = self.glass_dropdown.get()
+                flash = self.flash_dropdown.get()
+                year = self.year_dropdown.get()
+                grade = self.grade_dropdown.get()
+
+                title_conditions, publisher_counts = statistic_project_by_Publisher(self.df1, ic_type, factory, glass, flash,
+                                                                            year,grade)
+                self.draw_histogram(choose, title_conditions, publisher_counts)
 
             # # 设置网格线
             # f_plot.grid(True, linestyle='--', alpha=0.6)
@@ -1776,7 +1831,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v5.1_20260104")
+        self.root.title("MP List Check Tool_v5.2_20260112")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 

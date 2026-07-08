@@ -20,7 +20,7 @@ GLASS_TYPES = datas.iloc[:, 2].dropna().tolist()
 YEARS = datas.iloc[:, 3].dropna().tolist()
 GRADES = datas.iloc[:, 4].dropna().tolist()
 GRADES.append('NULL')
-
+PUBLISHER = datas.iloc[:, 7].dropna().tolist()
 
 # print(TARGET_ICS)
 # print(FACTORIES)
@@ -43,7 +43,7 @@ GRADES.append('NULL')
 # GRADES = ['v', 'A', 'G', '-', 'NULL']
 
 
-def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
+def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all', publisher='ALL'):
     """
     根据条件筛选更新次数的项目数量
     :param df: 传入二维数组
@@ -81,6 +81,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x)
         else 'UNKNOWN')
+    df_filtered.loc[:, 'Publisher'] = df_filtered.iloc[:, 17].astype(str)
 
     # 创建唯一项目ID
     df_filtered.loc[:, 'Project_ID'] = (
@@ -113,10 +114,10 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         df_filtered = df_filtered[df_filtered['Flash'] == flash.upper()]
 
     if year != 'ALL':
-        # df_filtered = df_filtered[df_filtered['Year'] == year]
-        valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
-        valid_projects = valid_projects[valid_projects['Year'] == year]['Project_ID']
-        df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
+        df_filtered = df_filtered[df_filtered['Year'] == year]
+        # valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
+        # valid_projects = valid_projects[valid_projects['Year'] == year]['Project_ID']
+        # df_filtered = df_filtered[df_filtered['Project_ID'].isin(valid_projects)]
 
     if grade != 'ALL':
         # valid_projects = df_filtered.drop_duplicates('Project_ID', keep='first')
@@ -125,6 +126,9 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         df_filtered = df_filtered[df_filtered['Grade'] == grade]
         # grade_projects = df_filtered[df_filtered['Grade'] == grade]['Project_ID'].unique()
         # df_filtered = df_filtered[df_filtered['Project_ID'].isin(grade_projects)]
+
+    if publisher != 'ALL':
+        df_filtered = df_filtered[df_filtered['Publisher'] == publisher]
 
     # 统计更新次数（P列）
     df_filtered.loc[:, 'Update_Count'] = df_filtered.iloc[:, 15].astype(str).apply(
@@ -138,7 +142,8 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         'Glass_Norm': 'first',
         'Flash': 'first',
         'Year': 'first',
-        'Grade': 'first'
+        'Grade': 'first',
+        'Publisher': 'first',
     }).reset_index()
 
     # 去除更新次数为0的项目统计
@@ -155,6 +160,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     print(f"Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
     print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {len(project_stats)}）")
     # print(dist_stats.to_string(index=False))
@@ -173,6 +179,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     if flash != 'ALL': conditions.append(f"Flash: {flash}")
     if year != 'ALL': conditions.append(f"年度: {year}")
     if grade != 'ALL': conditions.append(f"等级: {grade}")
+    if publisher != 'ALL': conditions.append(f"发布人: {publisher}")
 
     if len(project_stats) == 0:
         print("没有找到符合条件的项目")
@@ -191,7 +198,7 @@ def normolization_data(df):
     df = df.copy()
 
     # 标准化各列数据
-    df['sequence']= df.iloc[:, 0].astype(str)
+    df['sequence'] = df.iloc[:, 0].astype(str)
     df['Grade'] = df.iloc[:, 1].astype(str).str.upper()
     df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
     df['Terminal_Name'] = df.iloc[:, 3].astype(str)  # D列
@@ -208,9 +215,10 @@ def normolization_data(df):
         lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
     )
-
+    df['Publisher'] = df.iloc[:, 17].astype(str)
     # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['sequence']+ '_' +df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df['Factory'] + '_' + df['Glass_before']
+    df['Unique_ID'] = df['sequence'] + '_' + df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df[
+        'Factory'] + '_' + df['Glass_before']
     # df['Unique_ID'].to_csv('project_ids.txt', index=False, header=False, encoding='utf-8')
     # print("Project_ID 已保存到 project_ids.txt 文件")
 
@@ -225,7 +233,7 @@ def normolization_data(df):
     return df
 
 
-def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all'):
+def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='all', publisher='ALL'):
     """
     根据条件筛选IC型号项目数量
     :param df: 传入二维数组
@@ -250,6 +258,10 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
         df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Grade'] == grade]
 
+    if publisher != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Publisher'] == publisher]
+
     # IC型号匹配（7202M/7202H模糊匹配）
     # pattern = re.compile(r'7272|7202[MH]|7302')
     pattern = re.compile(r'7202MA|7272CA|7272|7202[MH]|7302')
@@ -272,6 +284,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
     print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(ic_counts.sum())}）")
     print("─" * 40)
@@ -282,6 +295,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
     if grade != 'ALL': title_conditions.append(f"等级: {grade}")
+    if publisher != 'ALL': title_conditions.append(f"发布人: {publisher}")
 
     if len(ic_counts) == 0:
         print("没有找到符合条件的项目")
@@ -290,7 +304,7 @@ def statistic_ic_projects(df, factory='ALL', glass='ALL', flash='ALL', year='ALL
     return title_conditions, ic_counts
 
 
-def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='ALL', grade='ALL'):
+def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='ALL', grade='ALL', publisher='ALL'):
     """
     根据条件筛选模组厂项目数量
     :param df: 传入二维数组
@@ -325,6 +339,10 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
         df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Grade'] == grade]
 
+    if publisher != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Publisher'] == publisher]
+
     # 只保留定义的模组厂
     df = df[df['Factory'].isin(FACTORIES)]
 
@@ -342,6 +360,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
     print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(factory_counts.sum())}）")
     print("─" * 40)
@@ -353,6 +372,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
     if grade != 'ALL': title_conditions.append(f"等级: {grade}")
+    if publisher != 'ALL': title_conditions.append(f"发布人: {publisher}")
 
     if len(factory_counts) == 0:
         print("没有找到符合条件的项目")
@@ -361,7 +381,7 @@ def statistic_module_factory(df, ic_type='ALL', glass='ALL', flash='ALL', year='
     return title_conditions, factory_counts
 
 
-def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year='ALL', grade='ALL'):
+def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year='ALL', grade='ALL', publisher='ALL'):
     """
     根据条件筛选玻璃厂项目数量
     :param df: 传入二维数组
@@ -396,6 +416,10 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
         df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Grade'] == grade]
 
+    if publisher != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Publisher'] == publisher]
+
     # 只保留定义的玻璃类型
     df = df[df['Glass'].isin(GLASS_TYPES)]
 
@@ -412,6 +436,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
     print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(glass_counts.sum())}）")
     print("─" * 40)
@@ -423,6 +448,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
     if grade != 'ALL': title_conditions.append(f"等级: {grade}")
+    if publisher != 'ALL': title_conditions.append(f"发布人: {publisher}")
 
     if len(glass_counts) == 0:
         print("没有找到符合条件的项目")
@@ -431,7 +457,7 @@ def statistic_glass_projects(df, ic_type='ALL', factory='ALL', flash='ALL', year
     return title_conditions, glass_counts
 
 
-def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year='ALL', grade='ALL'):
+def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year='ALL', grade='ALL', publisher='ALL'):
     """
     根据条件筛选Flash项目数量
     :param df: 传入二维数组
@@ -466,6 +492,10 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
         df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Grade'] == grade]
 
+    if publisher != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Publisher'] == publisher]
+
     # 按唯一ID去重
     unique_projects = df.drop_duplicates('Unique_ID')
 
@@ -480,6 +510,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
     print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(flash_counts.sum())}）")
     print("─" * 40)
@@ -491,6 +522,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
     if grade != 'ALL': title_conditions.append(f"等级: {grade}")
+    if publisher != 'ALL': title_conditions.append(f"发布人: {publisher}")
 
     if len(flash_counts) == 0:
         print("没有找到符合条件的项目")
@@ -498,7 +530,7 @@ def statistic_flash_projects(df, ic_type='ALL', factory='ALL', glass='ALL', year
     return title_conditions, flash_counts
 
 
-def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', grade='ALL'):
+def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', grade='ALL', publisher='ALL'):
     """
     根据条件筛选等级项目数量
     :param df: 传入二维数组
@@ -532,6 +564,10 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
         df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Grade'] == grade]
 
+    if publisher != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Publisher'] == publisher]
+
     # 按唯一ID去重
     unique_projects = df.drop_duplicates('Unique_ID')
 
@@ -548,6 +584,7 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(year_counts.sum())}）")
     print("─" * 40)
@@ -565,6 +602,7 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if grade != 'ALL': title_conditions.append(f"等级: {grade}")
+    if publisher != 'ALL': title_conditions.append(f"发布人: {publisher}")
 
     if len(year_counts) == 0:
         print("没有找到符合条件的项目")
@@ -573,7 +611,7 @@ def statistic_project_by_year(df, ic_type='ALL', factory='ALL', glass='ALL', fla
     return title_conditions, year_counts
 
 
-def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL'):
+def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL', publisher='ALL'):
     """
     根据条件筛选年度项目数量
     :param df: 传入二维数组
@@ -607,6 +645,10 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
         df = df.drop_duplicates('Unique_ID', keep='first')
         df = df[df['Year'] == year]
 
+    if publisher != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Publisher'] == publisher]
+
     # 按唯一ID去重
     unique_projects = df.drop_duplicates('Unique_ID')
 
@@ -623,6 +665,7 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"发布人: {publisher if publisher != 'ALL' else '全部'}")
     print("─" * 40)
     print(f"▌统计结果（项目总数: {int(grade_counts.sum())}）")
     print("─" * 40)
@@ -634,9 +677,85 @@ def statistic_project_by_grade(df, ic_type='ALL', factory='ALL', glass='ALL', fl
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
     if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
     if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if publisher != 'ALL': title_conditions.append(f"发布人: {publisher}")
 
     if len(grade_counts) == 0:
         print("没有找到符合条件的项目")
         return title_conditions, pd.Series(dtype=int)  # 返回空Series
 
     return title_conditions, grade_counts
+
+
+def statistic_project_by_Publisher(df, ic_type='ALL', factory='ALL', glass='ALL', flash='ALL', year='ALL', grade='ALL'):
+    """
+    根据条件筛选年度项目数量
+    :param df: 传入二维数组
+    :param ic_type: 7272/7202M/7202H/ALL
+    :param factory: 模组厂
+    :param glass: 玻璃型号，自动提取字母部分并大写
+    :param flash: 是否带Flash（Y/N/ALL）
+    :return: 项目名，统计结果
+    """
+    df = normolization_data(df)
+
+    # 应用筛选条件
+    if ic_type != 'ALL':
+        if ic_type == '7202M':
+            df = df[df['IC_Type'].str.contains('7202M', na=False)]
+        elif ic_type == '7202H':
+            df = df[df['IC_Type'].str.contains('7202H', na=False)]
+        else:
+            df = df[df['IC_Type'] == ic_type]
+
+    if factory != 'ALL':
+        df = df[df['Factory'] == factory]
+
+    if glass != 'ALL':
+        df = df[df['Glass'] == glass.upper()]
+
+    if flash != 'ALL':
+        df = df[df['Flash'] == flash.upper()]
+
+    if year != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Year'] == year]
+
+    if grade != 'ALL':
+        df = df.drop_duplicates('Unique_ID', keep='first')
+        df = df[df['Grade'] == grade]
+
+    # 按唯一ID去重
+    unique_projects = df.drop_duplicates('Unique_ID')
+
+    # 统计年度分布
+    publisher_counts = unique_projects['Publisher'].value_counts()
+    publisher_counts = publisher_counts.reindex(PUBLISHER, fill_value=0)
+    publisher_counts = publisher_counts[publisher_counts > 0].sort_values(ascending=False)
+
+    # print(year_counts)
+    # 打印筛选条件
+    print("▌ 筛选条件：")
+    print(f"IC型号: {ic_type if ic_type != 'ALL' else '全部'}")
+    print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
+    print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
+    print(f"是否带Flash: {flash if flash != 'ALL' else '全部'}")
+    print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"等级: {grade if grade != 'ALL' else '全部'}")
+    print("─" * 40)
+    print(f"▌统计结果（项目总数: {int(publisher_counts.sum())}）")
+    print("─" * 40)
+
+    # 图表美化
+    title_conditions = []
+    if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
+    if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
+    if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
+    if flash != 'ALL': title_conditions.append(f"Flash: {flash}")
+    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if grade != 'ALL': title_conditions.append(f"等级: {grade}")
+
+    if len(publisher_counts) == 0:
+        print("没有找到符合条件的项目")
+        return title_conditions, pd.Series(dtype=int)  # 返回空Series
+
+    return title_conditions, publisher_counts
