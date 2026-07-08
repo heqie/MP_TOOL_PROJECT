@@ -911,7 +911,7 @@ class MPAnalysis(tk.Frame):
         """
         # 绘制图表
         if int(counts.sum()) != 0:
-            fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+            fig = plt.figure(figsize=(7.1, 5.1), dpi=100)
             f_plot = fig.add_subplot(111)  # 划分区域
             self.canvas = FigureCanvasTkAgg(fig, master=self)
             self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
@@ -982,7 +982,7 @@ class MPAnalysis(tk.Frame):
 
                 if len(project_counts) != 0:
                     plt.close('all')
-                    fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+                    fig = plt.figure(figsize=(7.1, 5.1), dpi=100)
                     f_plot = fig.add_subplot(111)  # 划分区域
                     self.canvas = FigureCanvasTkAgg(fig, master=self)
                     self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
@@ -1600,7 +1600,7 @@ class KSAnalysis(tk.Frame):
         """
         # 绘制图表
         if int(counts.sum()) != 0:
-            fig = plt.figure(figsize=(7.2, 5.1), dpi=100)
+            fig = plt.figure(figsize=(7.1, 5.1), dpi=100)
             f_plot = fig.add_subplot(111)  # 划分区域
             self.canvas = FigureCanvasTkAgg(fig, master=self)
             self.canvas.get_tk_widget().place(x=0, y=120)  # 放置位置
@@ -1776,7 +1776,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v4.5_20251020")
+        self.root.title("MP List Check Tool_v4.6_20251226")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 
