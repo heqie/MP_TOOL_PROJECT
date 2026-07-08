@@ -40,6 +40,15 @@ def remove_after_underscore(text):
     result = re.sub(pattern, "", text)
     return result
 
+def remove_after_slash(text):
+    """
+    删除字符串中的 "/" 及其之后的字符
+    :param text: 输入字符串
+    :return: 处理后的字符串
+    """
+    pattern = r"/.*"   # 匹配斜杠及其后的所有字符（包括斜杠本身）
+    result = re.sub(pattern, "", text)
+    return result
 
 def convert_to_uppercase(text):
     """
@@ -422,6 +431,8 @@ def read_excel_for_analyseKS(file_path, sheet_name):
 
                 # 客诉类型去掉括号及其括号内容
                 df.iloc[:, 12] = df.iloc[:, 12].apply(lambda x: remove_parentheses(str(x)))
+                # 负责人以第一负责人为主
+                df.iloc[:, 13] = df.iloc[:, 13].apply(lambda x: remove_after_slash(str(x)))
                 # 替代部分不规范字符
                 df.replace({
                     'Y': '是',

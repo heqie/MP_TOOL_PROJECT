@@ -104,6 +104,14 @@ def normolization_dataKS(analyse_type, df):
     parsed_dates, formatted_years = parse_mixed_date_column_to_year(analyse_type, df, 5)
     df['Date'] = parsed_dates.astype(str)
     df['Year'] = formatted_years.astype(str)  # 提取开始的年份
+    # 提取半年度（上半年/下半年）
+    df['Half_Year'] = parsed_dates.apply(
+        lambda x: '上半年'
+        if pd.notna(x) and 1 <= x.month <= 6
+        else '下半年'
+        if pd.notna(x) and 7 <= x.month <= 12
+        else 'UNKNOWN'
+    )
     finish_dates, finish_years = parse_mixed_date_column_to_year(analyse_type, df, 6)
     df['finish_Date'] = finish_dates.astype(str)
     # print(df['Year'])
@@ -118,7 +126,7 @@ def normolization_dataKS(analyse_type, df):
     return df
 
 
-def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfer_AE='ALL', over='ALL', type='ALL',
+def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', half_year='ALL', transfer_AE='ALL', over='ALL', type='ALL',
                              principal='ALL'):
     """
     IC基础为X轴进行筛选统计
@@ -126,6 +134,7 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
     :param factory: 模组厂
     :param glass: 玻璃型号，自动提取字母部分并大写
     :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
@@ -143,6 +152,8 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
         df = df[df['Glass'] == glass.upper()]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if over != 'ALL':
@@ -171,6 +182,7 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
@@ -182,7 +194,11 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
     title_conditions = []
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
@@ -195,7 +211,7 @@ def statistic_ic_projects_KS(df, factory='ALL', glass='ALL', year='ALL', transfe
     return title_conditions, ic_counts
 
 
-def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', transfer_AE='ALL', over='ALL', type='ALL',
+def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', half_year='ALL', transfer_AE='ALL', over='ALL', type='ALL',
                                 principal='ALL'):
     """
     模组厂为基础进行筛选
@@ -203,6 +219,7 @@ def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', tran
     :param ic_type: IC型号
     :param glass: 玻璃型号，自动提取字母部分并大写
     :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
@@ -219,6 +236,8 @@ def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', tran
         df = df[df['Glass'] == glass.upper()]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if over != 'ALL':
@@ -243,6 +262,7 @@ def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', tran
     print(f"IC型号: {ic_type if ic_type != 'ALL' else '全部'}")
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
@@ -255,7 +275,11 @@ def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', tran
     title_conditions = []
     if ic_type != 'ALL': title_conditions.append(f"IC型号: {ic_type}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
@@ -268,7 +292,7 @@ def statistic_module_factory_KS(df, ic_type='ALL', glass='ALL', year='ALL', tran
     return title_conditions, factory_counts
 
 
-def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', transfer_AE='ALL', over='ALL', type='ALL',
+def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', half_year='ALL', transfer_AE='ALL', over='ALL', type='ALL',
                                 principal='ALL'):
     """
     玻璃厂为基础进行筛选
@@ -276,6 +300,7 @@ def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', tr
     :param factory:模组厂
     :param ic_type: IC型号
     :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
@@ -292,6 +317,8 @@ def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', tr
         df = df[df['IC_Type'] == ic_type]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if over != 'ALL':
@@ -315,6 +342,7 @@ def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', tr
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"IC型号: {ic_type if ic_type != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
@@ -327,7 +355,11 @@ def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', tr
     title_conditions = []
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if ic_type != 'ALL': title_conditions.append(f"IC型号: {ic_type}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
@@ -336,14 +368,15 @@ def statistic_glass_projects_KS(df, factory='ALL', ic_type='ALL', year='ALL', tr
     return title_conditions, glass_counts
 
 
-def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', transfer_AE='ALL', over='ALL',
+def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', half_year='ALL', transfer_AE='ALL', over='ALL',
                                  type='ALL', principal='ALL'):
     """
-    玻璃厂为基础进行筛选
+    按年度进行筛选统计
     :param df: 传入二维数组
     :param factory:模组厂
     :param ic_type: IC型号
     :param glass: 玻璃型号
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
@@ -360,6 +393,8 @@ def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', 
         df = df[df['IC_Type'] == ic_type]
     if glass != 'ALL':
         df = df[df['Glass'] == glass]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if over != 'ALL':
@@ -375,13 +410,14 @@ def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', 
     # 统计年度分布
     year_counts = unique_projects['Year'].value_counts()
     year_counts = year_counts.reindex(YEARS, fill_value=0)
-    year_counts = year_counts[year_counts > 0]
+    # year_counts = year_counts[year_counts > 0]
     # print(year_counts)
     # 打印筛选条件
     print("▌ 筛选条件：")
     print(f"IC型号: {ic_type if ic_type != 'ALL' else '全部'}")
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
@@ -395,6 +431,7 @@ def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', 
     if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
+    # if half_year != 'ALL': title_conditions.append(f"半年度: {half_year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
@@ -407,15 +444,91 @@ def statistic_project_by_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', 
     return title_conditions, year_counts
 
 
-def statistic_project_transferAE_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', over='ALL', type='ALL',
+def statistic_project_by_half_year_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', transfer_AE='ALL', over='ALL',
+                                      type='ALL', principal='ALL'):
+    """
+    根据条件筛选半年度（上半年/下半年）项目数量
+    :param df: 传入二维数组
+    :param factory: 模组厂
+    :param ic_type: IC型号
+    :param glass: 玻璃型号，自动提取字母部分并大写
+    :param year: 2023/2024/2025/ALL
+    :param transfer_AE:是否转接AE(是/否/ALL)
+    :param over:是否结案(是/否/ALL)
+    :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
+    :param principal:负责人
+    :return: 标题条件列表，半年度统计结果Series (上半年/下半年)
+    """
+    # 标准化各列数据
+    df = normolization_dataKS('半年度', df)
+
+    # 应用筛选条件
+    if factory != 'ALL':
+        df = df[df['Factory'] == factory]
+    if ic_type != 'ALL':
+        df = df[df['IC_Type'] == ic_type]
+    if glass != 'ALL':
+        df = df[df['Glass'] == glass]
+    if year != 'ALL':
+        df = df[df['Year'] == year]
+    if transfer_AE != 'ALL':
+        df = df[df['Transfer_AE'] == transfer_AE]
+    if over != 'ALL':
+        df = df[df['Over'] == over]
+    if type != 'ALL':
+        df = df[df['Type'] == type]
+    if principal != 'ALL':
+        df = df[df['Principal'] == principal]
+
+    # 按唯一ID去重
+    unique_projects = df.drop_duplicates('Unique_ID')
+
+    # 统计半年度分布
+    half_year_counts = unique_projects['Half_Year'].value_counts()
+    half_year_counts = half_year_counts.reindex(['上半年', '下半年'], fill_value=0)
+
+    # 打印筛选条件
+    print("▌ 筛选条件：")
+    print(f"IC型号: {ic_type if ic_type != 'ALL' else '全部'}")
+    print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
+    print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
+    print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
+    print(f"结案与否: {over if over != 'ALL' else '全部'}")
+    print(f"客诉类型: {type if type != 'ALL' else '全部'}")
+    print(f"负责人: {principal if principal != 'ALL' else '全部'}")
+    print("─" * 40)
+    print(f"▌半年度统计结果（项目总数: {int(half_year_counts.sum())}）")
+    print("─" * 40)
+
+    # 图表美化
+    title_conditions = []
+    if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
+    if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
+    if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
+    # if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
+    if over != 'ALL': title_conditions.append(f"结案与否: {over}")
+    if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
+    if principal != 'ALL': title_conditions.append(f"负责人: {principal}")
+
+    if len(half_year_counts) == 0:
+        print("没有找到符合条件的项目")
+        return title_conditions, pd.Series(dtype=int)  # 返回空Series
+
+    return title_conditions, half_year_counts
+
+
+def statistic_project_transferAE_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', half_year='ALL', over='ALL', type='ALL',
                                     principal='ALL'):
     """
-    玻璃厂为基础进行筛选
+    按转接AE与否进行筛选统计
     :param df: 传入二维数组
     :param factory:模组厂
     :param ic_type: IC型号
     :param glass: 玻璃型号
-    :param transfer_AE:是否转接AE(是/否/ALL)
+    :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
     :param principal:负责人
@@ -433,6 +546,8 @@ def statistic_project_transferAE_KS(df, factory='ALL', ic_type='ALL', glass='ALL
         df = df[df['Glass'] == glass]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if over != 'ALL':
         df = df[df['Over'] == over]
     if type != 'ALL':
@@ -453,6 +568,7 @@ def statistic_project_transferAE_KS(df, factory='ALL', ic_type='ALL', glass='ALL
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
     print(f"负责人: {principal if principal != 'ALL' else '全部'}")
@@ -465,7 +581,11 @@ def statistic_project_transferAE_KS(df, factory='ALL', ic_type='ALL', glass='ALL
     if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
     if principal != 'ALL': title_conditions.append(f"负责人: {principal}")
@@ -477,16 +597,17 @@ def statistic_project_transferAE_KS(df, factory='ALL', ic_type='ALL', glass='ALL
     return title_conditions, transferAE_counts
 
 
-def statistic_project_over_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', transfer_AE='ALL', type='ALL',
+def statistic_project_over_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', half_year='ALL', transfer_AE='ALL', type='ALL',
                               principal='ALL'):
     """
-    玻璃厂为基础进行筛选
+    按结案与否进行筛选统计
     :param df: 传入二维数组
     :param factory:模组厂
     :param ic_type: IC型号
     :param glass: 玻璃型号
+    :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
-    :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
     :param principal:负责人
     :return: 项目名，统计结果
@@ -503,6 +624,8 @@ def statistic_project_over_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
         df = df[df['Glass'] == glass]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if type != 'ALL':
@@ -523,6 +646,7 @@ def statistic_project_over_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
     print(f"负责人: {principal if principal != 'ALL' else '全部'}")
@@ -535,7 +659,11 @@ def statistic_project_over_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
     if principal != 'ALL': title_conditions.append(f"负责人: {principal}")
@@ -547,14 +675,16 @@ def statistic_project_over_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     return title_conditions, over_counts
 
 
-def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', transfer_AE='ALL', over='ALL',
+def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', half_year='ALL', transfer_AE='ALL', over='ALL',
                               principal='ALL'):
     """
-    玻璃厂为基础进行筛选
+    按客诉类型进行筛选统计
     :param df: 传入二维数组
     :param factory:模组厂
     :param ic_type: IC型号
     :param glass: 玻璃型号
+    :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
@@ -573,6 +703,8 @@ def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
         df = df[df['Glass'] == glass]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if over != 'ALL':
@@ -595,6 +727,7 @@ def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"负责人: {principal if principal != 'ALL' else '全部'}")
@@ -607,7 +740,11 @@ def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if principal != 'ALL': title_conditions.append(f"负责人: {principal}")
@@ -619,18 +756,19 @@ def statistic_project_type_KS(df, factory='ALL', ic_type='ALL', glass='ALL', yea
     return title_conditions, type_counts
 
 
-def statistic_project_principal_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', transfer_AE='ALL',
+def statistic_project_principal_KS(df, factory='ALL', ic_type='ALL', glass='ALL', year='ALL', half_year='ALL', transfer_AE='ALL',
                                    over='ALL', type='ALL'):
     """
-    玻璃厂为基础进行筛选
+    按负责人进行筛选统计
     :param df: 传入二维数组
     :param factory:模组厂
     :param ic_type: IC型号
     :param glass: 玻璃型号
+    :param year: 2023/2024/2025/ALL
+    :param half_year: 半年度 上半年/下半年/ALL
     :param transfer_AE:是否转接AE(是/否/ALL)
     :param over:是否结案(是/否/ALL)
     :param type:客诉类型(ALL/DP code/FW效果/IC来料/环境干扰/模组工艺/人为因素/玻璃来料)
-    :param principal:负责人
     :return: 项目名，统计结果
     """
     # 标准化各列数据
@@ -645,6 +783,8 @@ def statistic_project_principal_KS(df, factory='ALL', ic_type='ALL', glass='ALL'
         df = df[df['Glass'] == glass]
     if year != 'ALL':
         df = df[df['Year'] == year]
+    if half_year != 'ALL':
+        df = df[df['Half_Year'] == half_year]
     if transfer_AE != 'ALL':
         df = df[df['Transfer_AE'] == transfer_AE]
     if over != 'ALL':
@@ -667,6 +807,7 @@ def statistic_project_principal_KS(df, factory='ALL', ic_type='ALL', glass='ALL'
     print(f"玻璃型号: {glass if glass != 'ALL' else '全部'}")
     print(f"模组厂: {factory if factory != 'ALL' else '全部'}")
     print(f"年度: {year if year != 'ALL' else '全部'}")
+    print(f"半年度: {half_year if half_year != 'ALL' else '全部'}")
     print(f"转接AE与否: {transfer_AE if transfer_AE != 'ALL' else '全部'}")
     print(f"结案与否: {over if over != 'ALL' else '全部'}")
     print(f"客诉类型: {type if type != 'ALL' else '全部'}")
@@ -679,7 +820,11 @@ def statistic_project_principal_KS(df, factory='ALL', ic_type='ALL', glass='ALL'
     if ic_type != 'ALL': title_conditions.append(f"IC: {ic_type}")
     if factory != 'ALL': title_conditions.append(f"模组厂: {factory}")
     if glass != 'ALL': title_conditions.append(f"玻璃: {glass}")
-    if year != 'ALL': title_conditions.append(f"年度: {year}")
+    if year != 'ALL':
+        if half_year != 'ALL':
+            title_conditions.append(f"年度: {year+half_year}")
+        else:
+            title_conditions.append(f"年度: {year}")
     if transfer_AE != 'ALL': title_conditions.append(f"转接AE与否: {transfer_AE}")
     if over != 'ALL': title_conditions.append(f"结案与否: {over}")
     if type != 'ALL': title_conditions.append(f"客诉类型: {type}")
