@@ -234,7 +234,7 @@ def read_excel_with_merged_cells(file_path, sheet_name):
                     '新显': '长信新显',
                     '天山': '天山电子',
                 }, inplace=True)
-                df.iloc[:, 6] = df.iloc[:, 6].ffill()
+                df.iloc[:, 6] = df.iloc[:, 6].ffill().apply(lambda x: remove_parentheses(str(x)))
                 df.iloc[:, 7] = df.iloc[:, 7].ffill()
                 df.iloc[:, 8] = df.iloc[:, 8].ffill()
                 df.iloc[:, 9] = df.iloc[:, 9].ffill()
@@ -350,6 +350,7 @@ def read_excel_for_analyse(file_path, sheet_name):
                     '湖南金宏光电': '金宏光电',
                     '新显': '长信新显',
                     '天山': '天山电子',
+                    '华夏彩(沛宏)':'沛宏',
                 }, inplace=True)
 
                 df.iloc[:, 10] = df.iloc[:, 10].ffill()
@@ -374,6 +375,7 @@ def read_excel_for_analyse(file_path, sheet_name):
                 df = df.fillna(0)
                 # 删除字符串中的空格和换行符
                 df = df.replace({'\n': '', ' ': ''}, regex=True)
+
 
                 # df.to_excel('output.xlsx', index=False)
 
@@ -577,3 +579,11 @@ def read_excel_for_analyseHN(file_path, sheet_name = None):
 # print(unique_values)
 # print("unique_values已保存到 glass.txt 文件")
 # df_combined.iloc[:,3].drop_duplicates().to_csv('module.txt', index=False, header=False, encoding='utf-8')
+
+
+
+# file_path = 'Project MP List&MP Flow List&CUT4兼容&HV noise (4).xlsx'
+# sheet_name = 'MP Project List（internal）'
+# df = read_excel_for_analyse(file_path, sheet_name)
+# df_modu  = df.iloc[:, 5]
+# df_modu.drop_duplicates().to_csv('module.txt', index=False, header=False, encoding='utf-8')

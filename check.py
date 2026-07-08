@@ -148,8 +148,8 @@ def check_ic_model(column, valid_IC):
         if pd.isna(value) or value == 0:
             errors.append((idx + 2, 'IC', "IC为空值"))
             continue
-        if value == 7272 or value == 7302:
-            continue
+        # if value == 7272 or value == 7302 or value == 7371:     //已在compare文件中 读取过程字符串化
+        #     continue
         if str(value) not in valid_IC:  # 将值转换为字符串进行比较
             errors.append((idx + 2, 'IC', value))
     return errors
@@ -265,6 +265,8 @@ def check_date_format(df):
             if pd.notna(value) and value != 0 and value != '' and not pattern.match(str(value)):
                 errors.append((idx + 2, '发布日期', value))
     return errors
+
+
 
 
 def fix_sequence(file_path, errors):
@@ -461,6 +463,82 @@ def check_same_project(df):
         else:
             # 初始化该项目号的分组列表，第一个分组
             project_groups[project] = [[(seq, row_num)]]
+
+    return errors
+
+
+def check_ito_version(df):
+    """
+    检查ITO信息
+    :param df: DataFrame，第一行为标题行，数据从第二行开始
+    :return: 错误列表，每个元素为(模组行号, 整机行号, 项目号, 模组版本号, 整机版本号)
+    """
+    # 避免修改原DataFrame
+    df = df.copy()
+
+    # 辅助列（转为字符串便于比较）
+    df['Project_Name'] = df.iloc[:, 2].astype(str)               # C列
+    df['Terminal_Name'] = df.iloc[:, 3].astype(str)              # D列
+    df['IC'] = df.iloc[:, 4].astype(str)                         # D列
+    df['Factory'] = df.iloc[:, 5].astype(str)                    # F列
+    df['Glass'] = df.iloc[:, 7].astype(str)               # H列
+
+    # 创建唯一项目ID：仅当所有关键字段均不为'0'时才生成
+    df['Unique_ID'] = ''
+    valid_mask = (df['Project_Name'] != '0') & (df['Terminal_Name'] != '0') & \
+                 (df['Factory'] != '0') & (df['Glass'] != '0')
+    df.loc[valid_mask, 'Unique_ID'] = (df.loc[valid_mask, 'Project_Name'] + '_' +
+                                       df.loc[valid_mask, 'Terminal_Name'] + '_' +
+                                       df.loc[valid_mask, 'IC'] + '_' +
+                                       df.loc[valid_mask, 'Factory'] + '_' +
+                                       df.loc[valid_mask, 'Glass'])
+
+    # 站点列（K列）和版本号列（O列）
+    site_col = df.iloc[:, 10].astype(str)      # K列，索引10
+    version_col = df.iloc[:, 14].astype(str)   # O列，索引14
+
+    # 存储每个唯一项目ID的模组和整机最后信息：{Unique_ID: (行号, 版本号, 项目号)}
+    last_mod = {}
+    last_asm = {}
+
+    for idx in range(len(df)):
+        row_num = idx + 2   # 数据从第2行开始对应Excel行号
+
+        unique_id = df.iloc[idx]['Unique_ID']
+        # 跳过无效唯一ID的行
+        if not unique_id or unique_id == '':
+            continue
+
+        site = site_col.iloc[idx]
+        version = version_col.iloc[idx]
+
+        # 跳过站点为0的行
+        if site == '0':
+            continue
+
+        # 站点类型标准化
+        site_str = site.strip().lower()
+        project_name = df.iloc[idx]['Project_Name']   # 获取项目号
+
+        # 处理模组：仅当版本号非0时记录，并始终更新为最新行
+        if site_str in ('模组', 'module'):
+            if version != '0':
+                last_mod[unique_id] = (row_num, version, project_name)
+
+        # 处理整机：仅当版本号非0时记录，并始终更新为最新行
+        elif site_str in ('整机', 'whole', 'machine'):
+            if version != '0':
+                last_asm[unique_id] = (row_num, version, project_name)
+
+    errors = []
+    # 对每个唯一项目ID进行比较
+    for unique_id in last_mod:
+        # 仅当整机存在非0版本时才比较
+        if unique_id in last_asm:
+            mod_row, mod_ver, proj_name = last_mod[unique_id]
+            asm_row, asm_ver, _ = last_asm[unique_id]   # 项目号相同，可忽略
+            if mod_ver[-2:] != asm_ver[-2:]:
+                errors.append((mod_row, asm_row, mod_ver, asm_ver, proj_name))
 
     return errors
 

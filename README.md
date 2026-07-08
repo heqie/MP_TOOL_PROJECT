@@ -112,3 +112,10 @@
     - 支持新增自定义关键字，同MP标签页规则，关键字信息在compare_information.xlsx表Sheet3中，不是关键字的信息内容会被归纳为'Unkown'，可自行修改原excel表格中信息；
     - 'Unkown'选择不支持条件筛选，其余均支持条件组合筛选；
     - 空字符、’/‘字符均被归纳为NULL项，可支持条件筛选；
+## V5.5
+1. Check标签页:
+    - Check页面增加整机ITO信息检查：对比整机最新ITO的MP bin版本与模组端的最新版本是否一致；
+    - 屏蔽check all时候的序号校正功能；
+    - 补充新IC、玻璃信息；
+2. Analyse/MP标签页：
+    - 新增整机ITO筛选项：ALL、Y、N，类似于flash，且支持其他关联项筛选；

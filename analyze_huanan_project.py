@@ -1089,4 +1089,5 @@ def statistic_pm_projects_HN(df, ic_type='ALL', factory='ALL', glass='ALL', year
 
 # parsed_dates, date_formatted = parse_mixed_date_column_to_year_month('年度', df,4)
 # print(date_formatted)
+# date_formatted.drop_duplicates(inplace=True)   # 去除所有重复行
 # date_formatted.to_csv('year.txt', index=False, header=False, encoding='utf-8')

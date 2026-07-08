@@ -590,6 +590,10 @@ class CheckFrame(tk.Frame):
         self.btn_project_revise = tk.Button(self, text="项目号位置校正", height=1, width=15,
                                             command=lambda: self.move_same_projects_position(self.position_error))
 
+        self.btn_project_ITO = tk.Button(self, text="整机ITO信息检查", height=1, width=15,
+                                            command=lambda: self.run_check("整机最新ITO的MP bin版本与模组端的最新版本是否一致检查",
+                                                                           lambda: check_ito_version(self.df)))
+
         # 结果显示区域
         self.result_area = scrolledtext.ScrolledText(self)
         self.result_area.place(x=10 * multiple, y=90, width=590 * multiple, height=480 * multiple)
@@ -636,7 +640,7 @@ class CheckFrame(tk.Frame):
                     if valid_data is not None and not valid_data.empty:
                         self.valid_TOOL_version = valid_data.iloc[:, 1].dropna().tolist()
                         self.valid_glass_models = valid_data.iloc[:, 2].dropna().tolist()
-                        self.valid_IC = valid_data.iloc[:, 0].dropna().tolist()
+                        self.valid_IC = valid_data.iloc[:, 0].dropna().astype(str).tolist()
                     else:
                         self.valid_TOOL_version = []
                         self.valid_glass_models = []
@@ -671,10 +675,11 @@ class CheckFrame(tk.Frame):
             self.btn_date_format.place_forget()
             self.btn_project_name.place_forget()
             self.btn_project_revise.place_forget()
+            self.btn_project_ITO.place_forget()
             self.checks_visible = False
         else:
             # 显示功能按钮
-            self.result_area.place(x=10 * multiple, y=170, width=590 * multiple, height=400 * multiple)
+            self.result_area.place(x=10 * multiple, y=210, width=590 * multiple, height=400 * multiple)
             self.btn_sequence.place(x=10 * multiple, y=90)
             self.btn_grade.place(x=120 * multiple, y=90)
             self.btn_ic_model.place(x=230 * multiple, y=90)
@@ -686,6 +691,7 @@ class CheckFrame(tk.Frame):
             self.btn_project_name.place(x=340 * multiple, y=130)
             self.btn_project_revise.place(x=450 * multiple, y=130)
             self.btn_project_revise.config(state=tk.DISABLED)
+            self.btn_project_ITO.place(x=10 * multiple, y=170)
             self.checks_visible = True
 
     def run_check_all(self):
@@ -696,7 +702,7 @@ class CheckFrame(tk.Frame):
         if self.reload_var.get():  # 如果勾选框被勾选，默认重新加载文件
             self.reload_excel()
         checks = [
-            ("序列检查", check_sequence(self.df)),
+            # ("序列检查", check_sequence(self.df)),
             ("等级检查", check_grade(self.df.iloc[:, 1])),
             ("IC型号检查", check_ic_model(self.df.iloc[:, 6], self.valid_IC)),
             ("玻璃型号检查", check_glass_model(self.df.iloc[:, 7], self.valid_glass_models)),
@@ -704,7 +710,8 @@ class CheckFrame(tk.Frame):
             ("flash有无检查", check_flash(self.df.iloc[:, 9], self.df.iloc[:, 8])),
             ("Tool版本号检查", check_tool_version(self.df, self.valid_TOOL_version)),
             ("发布日期检查", check_date_format(self.df)),
-            ("项目号是否重复检查", check_same_project(self.df))
+            ("项目号是否重复检查", check_same_project(self.df)),
+            ("整机最新ITO的MP bin版本与模组端的最新版本是否一致检查", check_ito_version(self.df))
         ]
         # 清空结果显示区域
         self.result_area.config(state=tk.NORMAL)
@@ -715,8 +722,8 @@ class CheckFrame(tk.Frame):
             self.result_area.insert(tk.END, f"{check_name}:\n")
             if not errors:
                 self.result_area.insert(tk.END, "  PASS\n", "green")
-                if check_name == "序列检查":
-                    self.btn_sequence_revise.config(state=tk.DISABLED)
+                # if check_name == "序列检查":
+                #     self.btn_sequence_revise.config(state=tk.DISABLED)
                 if check_name == '项目号是否重复检查':
                     self.btn_project_revise.config(state=tk.DISABLED)
             else:
@@ -725,13 +732,15 @@ class CheckFrame(tk.Frame):
                 for error in errors:
                     if check_name == "项目号是否重复检查":
                         self.result_area.insert(tk.END, f"项目号‘{error[3]}’,重复位置: 行 {error[0]} 和行 {error[1]} \n", "red")
+                    elif check_name == "整机最新ITO的MP bin版本与模组端的最新版本是否一致检查":
+                        self.result_area.insert(tk.END, f"项目号‘{error[4]}’: 第 {error[0]} 行,模组端为{error[2]}; 第 {error[1]} 行, 整机端为{error[3]}\n", "red")
                     else:
                         self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
 
                 # 序列检查有问题则启用序号校正按钮
-                if check_name == "序列检查":
-                    self.btn_sequence_revise.config(state=tk.NORMAL)
-                    self.sequence_error = check_sequence_for_fix(self.df)
+                # if check_name == "序列检查":
+                #     self.btn_sequence_revise.config(state=tk.NORMAL)
+                #     self.sequence_error = check_sequence_for_fix(self.df)
 
                 # 项目号检查有问题启用项目号位置校正
                 if check_name == '项目号是否重复检查':
@@ -770,6 +779,10 @@ class CheckFrame(tk.Frame):
             for error in errors:
                 if check_name == "项目号是否重复检查":
                     self.result_area.insert(tk.END, f"项目号‘{error[3]}’,重复位置: 行 {error[0]}和行 {error[1]} \n", "red")
+                elif check_name == "整机最新ITO的MP bin版本与模组端的最新版本是否一致检查":
+                    self.result_area.insert(tk.END,
+                                            f"项目号‘{error[4]}’: 第 {error[0]} 行,模组端为{error[2]}; 第 {error[1]} 行, 整机端为{error[3]}\n",
+                                            "red")
                 else:
                     self.result_area.insert(tk.END, f" 第 {error[0]} 行, 错误值: {error[2]}\n", "red")
 
@@ -958,7 +971,7 @@ class MPAnalysis(tk.Frame):
         self.btn_analyse = tk.Button(self, text="项目统计", command=self.get_xl_to_analyse, state=tk.DISABLED)
         self.btn_analyse.place(x=465 * multiple, y=15, width=100* multiple)
 
-        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度', '等级', '发布人']
+        self.analyse_values = ["ALL", 'IC型号', '模组厂', '玻璃厂', 'Flash', '年度', '等级', '发布人','ITO']
         self.analyse_dropdown = ttk.Combobox(self, values=self.analyse_values, state="readonly")
         self.analyse_dropdown.current(0)
         self.analyse_dropdown.place(x=465 * multiple, y=60, width=100* multiple)
@@ -1029,6 +1042,13 @@ class MPAnalysis(tk.Frame):
         self.publisher_dropdown = EditableCombobox(self, category='Publisher', values=self.publisher_values)
         self.publisher_dropdown.current(0)
         self.publisher_dropdown.place(x=265 * multiple, y=80, width=90)
+
+        self.label_ITO = tk.Label(self, text="ITO:", anchor="e")
+        self.label_ITO.place(x=335 * multiple, y=80, width=50)
+        self.ITO_values = ['ALL', 'Y', 'N']
+        self.ITO_dropdown = ttk.Combobox(self, values=self.ITO_values, state="readonly")
+        self.ITO_dropdown.current(0)
+        self.ITO_dropdown.place(x=370 * multiple, y=80, width=90)
 
         # 模组分页设置
         # 初始化分页控件
@@ -1110,6 +1130,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == 'IC型号':
             self.ic_dropdown.config(state=tk.DISABLED)
@@ -1125,6 +1147,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == '模组厂':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -1140,7 +1164,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
-
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == '玻璃厂':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -1156,6 +1181,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == 'Flash':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -1171,6 +1198,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == '年度':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -1186,6 +1215,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == '等级':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -1201,6 +1232,8 @@ class MPAnalysis(tk.Frame):
             self.grade_dropdown.config(state=tk.DISABLED)
             self.publisher_dropdown.config(state=tk.NORMAL)
             self.publisher_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
 
         elif choose == '发布人':
             self.ic_dropdown.config(state=tk.NORMAL)
@@ -1216,6 +1249,25 @@ class MPAnalysis(tk.Frame):
             self.year_dropdown.config(state="readonly")
             self.grade_dropdown.config(state="readonly")
             self.publisher_dropdown.config(state=tk.DISABLED)
+            self.ITO_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
+
+        elif choose == 'ITO':
+            self.ic_dropdown.config(state=tk.NORMAL)
+            self.module_dropdown.config(state=tk.NORMAL)
+            self.glass_dropdown.config(state=tk.NORMAL)
+            self.flash_dropdown.config(state=tk.NORMAL)
+            self.year_dropdown.config(state=tk.NORMAL)
+            self.grade_dropdown.config(state=tk.NORMAL)
+            self.ic_dropdown.config(state="readonly")
+            self.module_dropdown.config(state="readonly")
+            self.glass_dropdown.config(state="readonly")
+            self.flash_dropdown.config(state="readonly")
+            self.year_dropdown.config(state="readonly")
+            self.grade_dropdown.config(state="readonly")
+            self.publisher_dropdown.config(state=tk.NORMAL)
+            self.ITO_dropdown.config(state="readonly")
+            self.ITO_dropdown.config(state=tk.DISABLED)
 
     def draw_histogram(self, choose, title, counts):
         """
@@ -1285,8 +1337,9 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
-                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year, grade,publisher)
+                conditions, dist_stats = statistic_project_status(self.df1, ic_type, factory, glass, flash, year, grade,publisher,ITO)
 
                 # 检查DataFrame是否为空
                 if dist_stats.empty or len(dist_stats) == 0:
@@ -1344,8 +1397,9 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
-                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year, grade,publisher)
+                title_conditions, ic_counts = statistic_ic_projects(self.df1, factory, glass, flash, year, grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, ic_counts)
 
             elif choose == '模组厂':
@@ -1355,9 +1409,10 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
                 title_conditions, factory_counts = statistic_module_factory(self.df1, ic_type, glass, flash, year,
-                                                                            grade,publisher)
+                                                                            grade,publisher,ITO)
                 self.module_data = factory_counts  # 保存模组厂数据
                 if int(factory_counts.sum()) > 0:
                     # 计算总页数
@@ -1421,9 +1476,10 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
                 title_conditions, glass_counts = statistic_glass_projects(self.df1, ic_type, factory, flash, year,
-                                                                          grade,publisher)
+                                                                          grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, glass_counts)
 
             elif choose == 'Flash':
@@ -1433,9 +1489,10 @@ class MPAnalysis(tk.Frame):
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
                 title_conditions, flash_counts = statistic_flash_projects(self.df1, ic_type, factory, glass, year,
-                                                                          grade,publisher)
+                                                                          grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, flash_counts)
 
 
@@ -1446,9 +1503,10 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 grade = self.grade_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
                 title_conditions, year_counts = statistic_project_by_year(self.df1, ic_type, factory, glass, flash,
-                                                                          grade,publisher)
+                                                                          grade,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, year_counts)
 
             elif choose == '等级':
@@ -1458,9 +1516,10 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
                 publisher = self.publisher_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
                 title_conditions, grade_counts = statistic_project_by_grade(self.df1, ic_type, factory, glass, flash,
-                                                                            year,publisher)
+                                                                            year,publisher,ITO)
                 self.draw_histogram(choose, title_conditions, grade_counts)
 
             elif choose == '发布人':
@@ -1470,10 +1529,24 @@ class MPAnalysis(tk.Frame):
                 flash = self.flash_dropdown.get()
                 year = self.year_dropdown.get()
                 grade = self.grade_dropdown.get()
+                ITO = self.ITO_dropdown.get()
 
                 title_conditions, publisher_counts = statistic_project_by_Publisher(self.df1, ic_type, factory, glass, flash,
-                                                                            year,grade)
+                                                                            year,grade,ITO)
                 self.draw_histogram(choose, title_conditions, publisher_counts)
+
+            elif choose == 'ITO':
+                ic_type = self.ic_dropdown.get()
+                factory = self.module_dropdown.get()
+                glass = self.glass_dropdown.get()
+                flash = self.flash_dropdown.get()
+                year = self.year_dropdown.get()
+                grade = self.grade_dropdown.get()
+                publisher = self.publisher_dropdown.get()
+
+                title_conditions, ITO_counts = statistic_ito_projects(self.df1, ic_type, factory, glass, flash,year,
+                                                                          grade,publisher)
+                self.draw_histogram(choose, title_conditions, ITO_counts)
 
             # # 设置网格线
             # f_plot.grid(True, linestyle='--', alpha=0.6)
@@ -2675,7 +2748,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v5.4_20260130")
+        self.root.title("MP List Check Tool_v5.5_20260403")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 
