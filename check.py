@@ -220,9 +220,9 @@ def check_tool_version(df, valid_version):
     :param valid_version:有效版本对比
     :return:错误值
     """
-    update_column = df.iloc[:, 15]
-    site_column = df.iloc[:, 10]
-    column = df.iloc[:, 13]
+    update_column = df.iloc[:, 14]
+    site_column = df.iloc[:, 9]
+    column = df.iloc[:, 12]
     errors = []
     for idx, (value, update_value, site_value) in enumerate(zip(column, update_column, site_column)):
         # 如果站点为 "整机"，则 TOOL 版本忽略
@@ -251,8 +251,8 @@ def check_date_format(df):
     """
     pattern = re.compile(r'^\d{4}\.(0?[1-9]|1[0-2])\.(0?[1-9]|[12][0-9]|3[01])$')
     errors = []
-    column = df.iloc[:, 16]
-    update_column = df.iloc[:, 15]
+    column = df.iloc[:, 15]
+    update_column = df.iloc[:, 14]
     for idx, (value, update_value) in enumerate(zip(column, update_column)):
         # 如果更新说明有字符，则发布日期不能为空
         if pd.notna(update_value) and str(update_value).strip() != '' and update_value != 0:
@@ -411,58 +411,53 @@ def check_same_project(df):
     :param df: 数组
     :return: 错误列表，每个错误包含(行号1, 行号2, 字段名, 项目号)
     '''
+
     errors = []
-    project_column = df.iloc[:, 2].str.upper()  # 项目号
-    sequence_column = df.iloc[:, 0]  # 序号
+    project_column = df.iloc[:, 1].str.upper()  # 项目号
+    # 不再使用序号列，直接用行号（遍历时通过 idx+2 获得）
 
-    # 用于记录每个项目号的所有分组信息
-    project_groups = {}
+    project_groups = {}  # {项目号: [[行号列表], ...]}
 
-    for idx, (project, seq) in enumerate(zip(project_column, sequence_column)):
-        row_num = idx + 2
+    for idx, project in enumerate(project_column):
+        row_num = idx + 2  # 实际行号（假设第1行为表头）
 
-        # 跳过空值或无效项目号的行
+        # 跳过空项目号
         if pd.isna(project) or project == '':
             continue
 
-        # 跳过空序号的行
-        if pd.isna(seq) or seq == '':
-            continue
-
-        # 检查项目号是否已存在
         if project in project_groups:
-            # 获取该项目号的所有分组
             groups = project_groups[project]
             matched_group = None
 
-            # 检查当前序号是否与任何分组中的序号相同或相邻
+            # 检查当前行号是否与某个分组中的任一行号连续（差值为1）
             for group in groups:
-                if any(seq == prev_seq or abs(seq - prev_seq) == 1 for prev_seq, _ in group):
+                # 只需检查分组的首尾行号即可？但为了精确，检查所有已存在行号
+                # 但通常只需检查最后一个行号是否连续（因为行号递增）
+                # 为保证通用性，检查所有行号是否有差值为1的
+                if any(abs(row_num - prev_row) == 1 for prev_row in group):
                     matched_group = group
                     break
 
             if matched_group is None:
-                # 如果没有匹配的分组，创建新分组
-                new_group = [(seq, row_num)]
+                # 创建新分组
+                new_group = [row_num]
                 groups.append(new_group)
-                # 为新分组的所有行与第一个分组的最后一行创建错误
-                if groups[0]:  # 确保第一个分组不为空
-                    last_row = groups[0][-1][1]  # 获取第一个分组的最后一行的行号
-                    first_row = groups[0][0][1]
-                    # 为当前行创建错误
-                    errors.append((last_row, row_num, '项目号', project,first_row))
+                # 记录错误：新分组与第一个分组不连续
+                if groups[0]:  # 第一个分组非空
+                    first_row = groups[0][0]
+                    last_row = groups[0][-1]  # 第一个分组最后一行
+                    errors.append((last_row, row_num, '项目号', project, first_row))
             else:
-                # 如果匹配到分组，将当前行添加到该分组
-                matched_group.append((seq, row_num))
-                # 如果当前分组不是第一个分组，需要为当前行与第一个分组的最后一行创建错误
+                # 加入已有分组
+                matched_group.append(row_num)
+                # 若该分组不是第一个分组，则报错（说明该项目号存在多个不相邻的段）
                 if matched_group is not groups[0] and groups[0]:
-                    last_row = groups[0][-1][1]  # 获取第一个分组的最后一行的行号
-                    first_row = groups[0][0][1]
-                    errors.append((last_row, row_num, '项目号', project,first_row))
-
+                    first_row = groups[0][0]
+                    last_row = groups[0][-1]
+                    errors.append((last_row, row_num, '项目号', project, first_row))
         else:
-            # 初始化该项目号的分组列表，第一个分组
-            project_groups[project] = [[(seq, row_num)]]
+            # 首次出现，创建第一个分组
+            project_groups[project] = [[row_num]]
 
     return errors
 
@@ -477,11 +472,11 @@ def check_ito_version(df):
     df = df.copy()
 
     # 辅助列（转为字符串便于比较）
-    df['Project_Name'] = df.iloc[:, 2].astype(str)               # C列
-    df['Terminal_Name'] = df.iloc[:, 3].astype(str)              # D列
-    df['IC'] = df.iloc[:, 4].astype(str)                         # D列
-    df['Factory'] = df.iloc[:, 5].astype(str)                    # F列
-    df['Glass'] = df.iloc[:, 7].astype(str)               # H列
+    df['Project_Name'] = df.iloc[:, 1].astype(str)               # C列
+    df['Terminal_Name'] = df.iloc[:, 2].astype(str)              # D列
+    df['IC'] = df.iloc[:, 3].astype(str)                         # D列
+    df['Factory'] = df.iloc[:, 4].astype(str)                    # F列
+    df['Glass'] = df.iloc[:, 6].astype(str)               # H列
 
     # 创建唯一项目ID：仅当所有关键字段均不为'0'时才生成
     df['Unique_ID'] = ''
@@ -494,8 +489,8 @@ def check_ito_version(df):
                                        df.loc[valid_mask, 'Glass'])
 
     # 站点列（K列）和版本号列（O列）
-    site_col = df.iloc[:, 10].astype(str)      # K列，索引10
-    version_col = df.iloc[:, 14].astype(str)   # O列，索引14
+    site_col = df.iloc[:, 9].astype(str)      # K列，索引10
+    version_col = df.iloc[:, 13].astype(str)   # O列，索引14
 
     # 存储每个唯一项目ID的模组和整机最后信息：{Unique_ID: (行号, 版本号, 项目号)}
     last_mod = {}

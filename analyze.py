@@ -59,9 +59,9 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     # 数据预处理
     df = df.copy()
     # 处理是否有ITO信息
-    site_col = df.iloc[:, 10].astype(str)    #站点
-    version_col = df.iloc[:, 14].astype(str)  #版本号信息
-    df['Unique_ID'] = df.iloc[:, 0].astype(str) + '_' +df.iloc[:, 2].astype(str) + '_' + df.iloc[:, 3].astype(str) + '_' + df.iloc[:, 5].astype(str) + '_' + df.iloc[:, 7].astype(str)
+    site_col = df.iloc[:, 9].astype(str)    #站点
+    version_col = df.iloc[:, 13].astype(str)  #版本号信息
+    df['Unique_ID'] = df.iloc[:, 1].astype(str) + '_' + df.iloc[:, 2].astype(str) + '_' + df.iloc[:, 4].astype(str) + '_' + df.iloc[:, 5].astype(str)+'_' + df.iloc[:, 6].astype(str)
     # 为每个唯一项目ID标记是否有整机站（Y/N）
     ito_flag = {}  # {Unique_ID: 'Y' or 'N'}
     # 先初始化为 N
@@ -83,7 +83,7 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
     df['ITO'] = df['Unique_ID'].map(ito_flag)
 
 
-    df_filtered = df[df.iloc[:, 10] == '模组'].copy()
+    df_filtered = df[df.iloc[:, 9] == '模组'].copy()
 
     # 标准化各列数据
     def normalize_ic(ic):
@@ -97,14 +97,14 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         return match.group(1).upper() if match else str(g).upper()
 
     # df_filtered.loc[:, 'Sequence'] = df_filtered.iloc[:, 0].astype(str)
-    df_filtered.loc[:, 'Grade'] = df_filtered.iloc[:, 1].astype(str).str.upper()
-    df_filtered.loc[:, 'IC_Norm'] = df_filtered.iloc[:, 6].apply(normalize_ic)
-    df_filtered.loc[:, 'Factory'] = df_filtered.iloc[:, 5].astype(str)
+    df_filtered.loc[:, 'Grade'] = df_filtered.iloc[:, 0].astype(str).str.upper()
+    df_filtered.loc[:, 'IC_Norm'] = df_filtered.iloc[:, 5].apply(normalize_ic)
+    df_filtered.loc[:, 'Factory'] = df_filtered.iloc[:, 4].astype(str)
     # df_filtered.loc[:,'Glass_before'] = df.iloc[:, 7].astype(str)
-    df_filtered.loc[:, 'Glass_Norm'] = df_filtered.iloc[:, 7].apply(normalize_glass)
-    df_filtered.loc[:, 'Flash'] = df_filtered.iloc[:, 9].astype(str).str.upper().apply(
+    df_filtered.loc[:, 'Glass_Norm'] = df_filtered.iloc[:, 6].apply(normalize_glass)
+    df_filtered.loc[:, 'Flash'] = df_filtered.iloc[:, 8].astype(str).str.upper().apply(
         lambda x: 'Y' if x.startswith('Y') else 'N')
-    df_filtered.loc[:, 'Year'] = df_filtered.iloc[:, 16].astype(str).apply(
+    df_filtered.loc[:, 'Year'] = df_filtered.iloc[:, 15].astype(str).apply(
         lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x)
         else 'UNKNOWN')
@@ -116,17 +116,17 @@ def statistic_project_status(df, ic_type='ALL', factory='ALL', glass='ALL', flas
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x)
         and 7 <= datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').month <= 12
         else 'UNKNOWN')
-    df_filtered.loc[:, 'Publisher'] = df_filtered.iloc[:, 17].astype(str)
+    df_filtered.loc[:, 'Publisher'] = df_filtered.iloc[:, 16].astype(str)
 
     df_filtered.loc[:, 'ITO'] = df_filtered['ITO']
 
     # 创建唯一项目ID
     df_filtered.loc[:, 'Project_ID'] = (
-            df_filtered.iloc[:, 0].astype(str) + '_' +
+            df_filtered.iloc[:, 1].astype(str) + '_' +
             df_filtered.iloc[:, 2].astype(str) + '_' +
-            df_filtered.iloc[:, 3].astype(str) + '_' +
+            df_filtered.iloc[:, 4].astype(str) + '_' +
             df_filtered.iloc[:, 5].astype(str) + '_' +
-            df_filtered.iloc[:, 7].astype(str)
+            df_filtered.iloc[:, 6].astype(str)
     )
     # df_filtered['Project_ID'].to_csv('project_ids.txt', index=False, header=False, encoding='utf-8')
     # print("Project_ID 已保存到 project_ids.txt 文件")
@@ -266,24 +266,24 @@ def normolization_data(df):
     df = df.copy()
 
     # 标准化各列数据
-    df['sequence'] = df.iloc[:, 0].astype(str)
-    df['Grade'] = df.iloc[:, 1].astype(str).str.upper()
-    df['Project_Name'] = df.iloc[:, 2].astype(str)  # C列
-    df['Terminal_Name'] = df.iloc[:, 3].astype(str)  # D列
-    df['Factory'] = df.iloc[:, 5].astype(str)  # F列
-    df['Glass_before'] = df.iloc[:, 7].astype(str)
-    df['Glass'] = df.iloc[:, 7].astype(str).apply(  # H列
+    # df['sequence'] = df.iloc[:, 0].astype(str)
+    df['Grade'] = df.iloc[:, 0].astype(str).str.upper()
+    df['Project_Name'] = df.iloc[:, 1].astype(str)  # C列
+    df['Terminal_Name'] = df.iloc[:, 2].astype(str)  # D列
+    df['Factory'] = df.iloc[:, 4].astype(str)  # F列
+    df['Glass_before'] = df.iloc[:, 6].astype(str)
+    df['Glass'] = df.iloc[:, 6].astype(str).apply(  # H列
         lambda x: re.match(r'^([A-Za-z]+)', str(x)).group(1).upper() if re.match(r'^([A-Za-z]+)', str(x)) else x.upper()
     )
-    df['IC_Type'] = df.iloc[:, 6].astype(str)  # G列
-    df['Flash'] = df.iloc[:, 9].astype(str).apply(  # J列
+    df['IC_Type'] = df.iloc[:, 5].astype(str)  # G列
+    df['Flash'] = df.iloc[:, 8].astype(str).apply(  # J列
         lambda x: 'Y' if str(x).upper().startswith('Y') else 'N'
     )
-    df['Year'] = df.iloc[:, 16].astype(str).apply(  # Q列
+    df['Year'] = df.iloc[:, 15].astype(str).apply(  # Q列
         lambda x: f"{datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').year}年度"
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) else '未知年度'
     )
-    df['Half_Year'] = df.iloc[:, 16].astype(str).apply(  # Q列 -> 半年度 H1(上半年)/H2(下半年)
+    df['Half_Year'] = df.iloc[:, 15].astype(str).apply(  # Q列 -> 半年度 H1(上半年)/H2(下半年)
         lambda x: '上半年'
         if pd.notnull(x) and re.match(r'\d{4}\.\d{1,2}\.\d{1,2}', x) 
         and 1 <= datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').month <= 6
@@ -292,9 +292,9 @@ def normolization_data(df):
         and 7 <= datetime.strptime(x.split(' ')[0].replace('.', '-'), '%Y-%m-%d').month <= 12
         else 'UNKNOWN'
     )
-    df['Publisher'] = df.iloc[:, 17].astype(str)
+    df['Publisher'] = df.iloc[:, 16].astype(str)
     # 创建唯一项目ID（项目+模组厂+玻璃）
-    df['Unique_ID'] = df['sequence'] + '_' + df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df[
+    df['Unique_ID'] = df['Project_Name'] + '_' + df['Terminal_Name'] + '_' + df[
         'Factory'] + '_' + df['Glass_before']
     # df['Unique_ID'].to_csv('project_ids.txt', index=False, header=False, encoding='utf-8')
     # print("Project_ID 已保存到 project_ids.txt 文件")
@@ -304,8 +304,8 @@ def normolization_data(df):
     df.loc[df['Unique_ID'] == target_id, 'Grade'] = 'G'
 
     # 处理是否有ITO信息
-    site_col = df.iloc[:, 10].astype(str)    #站点
-    version_col = df.iloc[:, 14].astype(str)  #版本号信息
+    site_col = df.iloc[:, 9].astype(str)    #站点
+    version_col = df.iloc[:, 13].astype(str)  #版本号信息
 
     # 为每个唯一项目ID标记是否有整机站（Y/N）
     ito_flag = {}  # {Unique_ID: 'Y' or 'N'}

@@ -548,36 +548,36 @@ class CheckFrame(tk.Frame):
         self.btn_show_checks.place(x=250 * multiple, y=50)
 
         # 序号校正按钮
-        self.btn_sequence_revise = tk.Button(self, text="序号校正", height=1, width=15,
-                                             command=lambda: self.fix_sequence_errors(self.sequence_error),
-                                             state=tk.DISABLED)
-        self.btn_sequence_revise.place(x=420 * multiple, y=50)
+        # self.btn_sequence_revise = tk.Button(self, text="序号校正", height=1, width=15,
+        #                                      command=lambda: self.fix_sequence_errors(self.sequence_error),
+        #                                      state=tk.DISABLED)
+        # self.btn_sequence_revise.place(x=420 * multiple, y=50)
 
         # 检查按钮（初始状态为隐藏和禁用）
-        self.btn_sequence = tk.Button(self, text="序列检查", height=1, width=15,
-                                      command=lambda: self.run_check("序列检查", lambda: check_sequence(self.df)))
+        # self.btn_sequence = tk.Button(self, text="序列检查", height=1, width=15,
+        #                               command=lambda: self.run_check("序列检查", lambda: check_sequence(self.df)))
         self.btn_grade = tk.Button(self, text="等级检查", height=1, width=15,
                                    command=lambda: self.run_check("等级检查", lambda: check_grade(self.df.iloc[:, 1])))
         self.btn_ic_model = tk.Button(self, text="IC型号检查", height=1, width=15, command=lambda: self.run_check("IC型号检查",
                                                                                                               lambda: check_ic_model(
                                                                                                                   self.df.iloc[
-                                                                                                                  :, 6],
+                                                                                                                  :, 5],
                                                                                                                   self.valid_IC)))
         self.btn_glass_model = tk.Button(self, text="玻璃型号检查", height=1, width=15,
                                          command=lambda: self.run_check("玻璃型号检查",
-                                                                        lambda: check_glass_model(self.df.iloc[:, 7],
+                                                                        lambda: check_glass_model(self.df.iloc[:, 6],
                                                                                                   self.valid_glass_models)))
         self.btn_interface = tk.Button(self, text="接口定义检查", height=1, width=15, command=lambda: self.run_check("接口定义检查",
                                                                                                                lambda: check_interface(
                                                                                                                    self.df.iloc[
                                                                                                                    :,
-                                                                                                                   8])))
+                                                                                                                   7])))
         self.btn_flash = tk.Button(self, text="flash检查", height=1, width=15, command=lambda: self.run_check("flash检查",
                                                                                                             lambda: check_flash(
                                                                                                                 self.df.iloc[
-                                                                                                                :, 9],
+                                                                                                                :, 8],
                                                                                                                 self.df.iloc[
-                                                                                                                :, 8])))
+                                                                                                                :, 7])))
         self.btn_tool_version = tk.Button(self, text="TOOL版本检查", height=1, width=15,
                                           command=lambda: self.run_check("TOOL版本检查", lambda: check_tool_version(self.df,
                                                                                                                 self.valid_TOOL_version)))
@@ -665,7 +665,7 @@ class CheckFrame(tk.Frame):
         if self.checks_visible:
             # 隐藏功能按钮
             self.result_area.place(x=10 * multiple, y=90, width=590 * multiple, height=480 * multiple)
-            self.btn_sequence.place_forget()
+            # self.btn_sequence.place_forget()
             self.btn_grade.place_forget()
             self.btn_ic_model.place_forget()
             self.btn_glass_model.place_forget()
@@ -679,19 +679,19 @@ class CheckFrame(tk.Frame):
             self.checks_visible = False
         else:
             # 显示功能按钮
-            self.result_area.place(x=10 * multiple, y=210, width=590 * multiple, height=400 * multiple)
-            self.btn_sequence.place(x=10 * multiple, y=90)
+            self.result_area.place(x=10 * multiple, y=170, width=590 * multiple, height=430 * multiple)
+            # self.btn_sequence.place(x=10 * multiple, y=90)
             self.btn_grade.place(x=120 * multiple, y=90)
             self.btn_ic_model.place(x=230 * multiple, y=90)
             self.btn_glass_model.place(x=340 * multiple, y=90)
             self.btn_interface.place(x=450 * multiple, y=90)
-            self.btn_flash.place(x=10 * multiple, y=130)
+            self.btn_flash.place(x=10 * multiple, y=90)
             self.btn_tool_version.place(x=120 * multiple, y=130)
             self.btn_date_format.place(x=230 * multiple, y=130)
             self.btn_project_name.place(x=340 * multiple, y=130)
             self.btn_project_revise.place(x=450 * multiple, y=130)
             self.btn_project_revise.config(state=tk.DISABLED)
-            self.btn_project_ITO.place(x=10 * multiple, y=170)
+            self.btn_project_ITO.place(x=10 * multiple, y=130)
             self.checks_visible = True
 
     def run_check_all(self):
@@ -703,11 +703,11 @@ class CheckFrame(tk.Frame):
             self.reload_excel()
         checks = [
             # ("序列检查", check_sequence(self.df)),
-            ("等级检查", check_grade(self.df.iloc[:, 1])),
-            ("IC型号检查", check_ic_model(self.df.iloc[:, 6], self.valid_IC)),
-            ("玻璃型号检查", check_glass_model(self.df.iloc[:, 7], self.valid_glass_models)),
-            ("接口定义检查", check_interface(self.df.iloc[:, 8])),
-            ("flash有无检查", check_flash(self.df.iloc[:, 9], self.df.iloc[:, 8])),
+            ("等级检查", check_grade(self.df.iloc[:, 0])),
+            ("IC型号检查", check_ic_model(self.df.iloc[:, 5], self.valid_IC)),
+            ("玻璃型号检查", check_glass_model(self.df.iloc[:, 6], self.valid_glass_models)),
+            ("接口定义检查", check_interface(self.df.iloc[:, 7])),
+            ("flash有无检查", check_flash(self.df.iloc[:, 8], self.df.iloc[:, 7])),
             ("Tool版本号检查", check_tool_version(self.df, self.valid_TOOL_version)),
             ("发布日期检查", check_date_format(self.df)),
             ("项目号是否重复检查", check_same_project(self.df)),
@@ -2759,7 +2759,7 @@ class MainApp:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("MP List Check Tool_v5.7_20260703")
+        self.root.title("MP List Check Tool_v5.8_20260817")
         # self.root.geometry("600x580")  # 设置窗口大小
         self.root.resizable(0, 0)
 

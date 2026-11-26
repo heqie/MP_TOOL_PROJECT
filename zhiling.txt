@@ -1,2 +1,29 @@
 打包指令：
 pyinstaller -w --i 111.ico --upx-dir "D:\upx-5.0.0-win64" MP_List_Check_Tool.py
+
+github指令：
+1.更新代码版本
+git branch   # 看看当前在哪个分支
+git pull     # 先拉取GitHub上最新的代码，防止冲突
+git status   # 看看哪些文件被改动了
+git add .    # 把改动加入暂存区
+git commit -m "更新了啥：比如修复了登录bug"   # 提交到本地
+git push     # 推送到GitHub
+2.分支管理
+git branch   # 列出所有本地分支
+git branch -r  # 列出所有远程分支
+git branch [branch-name]  # 新建一个分支，但依然停留在当前分支
+git checkout -b [branch]  # 新建一个分支，并切换到该分支
+git merge [branch]  # 合并指定分支到当前分支
+git branch -d [branch-name]  # 删除分支
+git push origin --delete [branch-name]  # 删除远程分支
+git branch -dr [remote/branch]
+3.其他常用指令
+git diff  #比较文件的不同，即暂存区和工作区的差异
+git reset  #回退版本
+git rm #删除工作区文件
+git mv  #移动或重命名工作区文件
+git log  #查看历史提交记录
+git blame <file>  #以列表形式查看指定文件的历史修改记录
+git remote  #远程仓库操作
+git fetch  #从远程获取代码库
